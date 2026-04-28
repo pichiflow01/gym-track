@@ -2,133 +2,941 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Progreso Gimnasio</title>
+  <title>Gym Track</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 16px; background:#f4f4f4; }
-    h1 { font-size: 1.4rem; margin-bottom: 12px; }
-    form, .card { background: #fff; padding: 12px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 12px; }
-    label { display:block; font-size: 0.85rem; margin-top: 8px; }
-    input, select, textarea { width:100%; padding:6px 8px; font-size:0.9rem; margin-top:3px; box-sizing:border-box; }
-    button { margin-top:10px; padding:8px 12px; font-size:0.9rem; border:none; border-radius:6px; background:#007bff; color:#fff; }
-    button:active { transform:scale(0.98); }
-    table { width:100%; border-collapse:collapse; font-size:0.8rem; }
-    th, td { padding:6px 4px; border-bottom:1px solid #ddd; text-align:left; }
-    th { background:#eee; position:sticky; top:0; }
-    .tag { font-size:0.75rem; color:#555; }
+    :root {
+      --bg: #050816;
+      --bg-alt: #0f172a;
+      --card: #111827;
+      --card-soft: #020617;
+      --accent: #f97316;
+      --accent-soft: rgba(249,115,22,0.15);
+      --accent-strong: #ea580c;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 45%, #000 100%);
+      color: var(--text);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 10px 16px;
+      background: linear-gradient(90deg, #020617, #0f172a);
+      border-bottom: 1px solid rgba(15,23,42,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header span {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: .03em;
+    }
+    header small {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 12px 76px; /* espacio para la barra inferior */
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    form, .card {
+      position: relative;
+      background: var(--card);
+      padding: 14px 12px;
+      border-radius: 14px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      box-shadow:
+        0 10px 25px rgba(0,0,0,0.55),
+        0 0 0 1px rgba(15,23,42,0.8);
+    }
+    form::before, .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(249,115,22,0.6), transparent 40%);
+      -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      opacity: .4;
+      pointer-events: none;
+    }
+
+    label {
+      display:block;
+      font-size: 0.78rem;
+      margin-top: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    input,
+    textarea,
+    select {
+      width:100%;
+      padding:7px 9px;
+      font-size:0.9rem;
+      margin-top:4px;
+      border-radius: 10px;
+      border:1px solid #1f2937;
+      background: #020617;
+      color: var(--text);
+      outline:none;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft), 0 0 20px rgba(249,115,22,0.3);
+      background: #030712;
+    }
+
+    textarea { resize: vertical; min-height: 60px; }
+
+    button {
+      margin-top:12px;
+      padding:9px 14px;
+      font-size:0.9rem;
+      border:none;
+      border-radius:999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color:#fff;
+      cursor:pointer;
+      font-weight:600;
+      letter-spacing:.04em;
+      text-transform: uppercase;
+      box-shadow:0 8px 20px rgba(249,115,22,0.4);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+    }
+    button:active {
+      transform:translateY(1px) scale(0.99);
+      box-shadow:0 4px 12px rgba(0,0,0,0.8);
+    }
+
+    .btn-small {
+      padding:5px 10px;
+      font-size:0.75rem;
+      margin-top:6px;
+    }
+
+    .delete-btn {
+      background: linear-gradient(135deg, var(--danger), #b91c1c);
+      box-shadow:0 4px 12px rgba(239,68,68,0.4);
+      font-size:0.7rem;
+      padding:4px 8px;
+      margin-top:0;
+    }
+
+    table {
+      width:100%;
+      border-collapse:collapse;
+      font-size:0.8rem;
+      border-radius:10px;
+      overflow:hidden;
+    }
+    th, td {
+      padding:6px 6px;
+      border-bottom:1px solid #1f2937;
+      text-align:left;
+    }
+    th {
+      background:#020617;
+      color:var(--muted);
+      position:sticky;
+      top:0;
+      z-index:1;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      font-size:0.7rem;
+    }
+    tbody tr:nth-child(odd) { background:rgba(15,23,42,0.9); }
+    tbody tr:nth-child(even) { background:#020617; }
+
+    .tag {
+      font-size:0.75rem;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:6px;
+    }
+    .summary {
+      font-size:0.86rem;
+      color:var(--text);
+      margin-bottom:4px;
+    }
+
+    .pill {
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:999px;
+      background:rgba(15,23,42,0.95);
+      border:1px solid var(--border);
+      font-size:0.7rem;
+      color:var(--muted);
+      margin-right:4px;
+      margin-bottom:4px;
+    }
+
+    /* Barra inferior tipo app */
+    .tab-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: rgba(15,23,42,0.96);
+      border-top: 1px solid var(--border);
+      display: flex;
+      backdrop-filter: blur(18px);
+    }
+    .tab-btn {
+      flex:1;
+      border:0;
+      background:none;
+      font-size:0.75rem;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      color:var(--muted);
+      cursor:pointer;
+    }
+    .tab-btn-active {
+      color:var(--accent);
+      font-weight:600;
+    }
+
+    #tab-hoy h2,
+    #tab-rutina h2,
+    #tab-stats h2 { margin:0 0 8px; font-size:1rem; }
+
+    /* Modales */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      max-width: 360px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 14px 12px 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+    }
+    .modal h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+    .hidden { display: none; }
+
+    .modal-item {
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card-soft);
+      margin-bottom: 8px;
+    }
+    .modal-item-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    @media (min-width: 768px) {
+      main {
+        max-width: 640px;
+        margin: 0 auto;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Progreso Gimnasio</h1>
+  <div class="app">
+    <header>
+      <span>Gym Track</span>
+      <small>Progreso personal</small>
+    </header>
 
-  <form id="entry-form">
-    <label>
-      Fecha
-      <input type="date" id="date" required>
-    </label>
-    <label>
-      Ejercicio
-      <input type="text" id="exercise" placeholder="Press banca, sentadilla, etc." required>
-    </label>
-    <label>
-      Peso (kg)
-      <input type="number" id="weight" step="0.5" required>
-    </label>
-    <label>
-      Repeticiones
-      <input type="number" id="reps" required>
-    </label>
-    <label>
-      Notas (opcional)
-      <textarea id="notes" rows="2" placeholder="Cómo te sentiste, RPE, etc."></textarea>
-    </label>
-    <button type="submit">Guardar entrenamiento</button>
-  </form>
+    <main>
+      <!-- Pestaña 1: Hoy -->
+      <section id="tab-hoy" class="view active">
+        <div class="card">
+          <div class="tag">Rutina y ejercicio</div>
+          <div class="summary">
+            Rutina: <strong id="selected-routine-label">Ninguna</strong>
+          </div>
+          <button type="button" id="choose-routine-btn" class="btn-small">Elegir rutina</button>
+          <div class="summary" style="margin-top:8px;">
+            Ejercicio: <strong id="selected-exercise-label">Ninguno</strong>
+          </div>
+          <button type="button" id="choose-exercise-btn" class="btn-small" disabled>Elegir ejercicio</button>
+          <div class="summary" style="margin-top:8px;">
+            Series planificadas: <strong id="planned-sets-label">-</strong>
+          </div>
+        </div>
 
-  <div class="card">
-    <div class="tag">Historial</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Ejercicio</th>
-          <th>Peso</th>
-          <th>Reps</th>
-          <th>Notas</th>
-        </tr>
-      </thead>
-      <tbody id="entries-body"></tbody>
-    </table>
+        <div class="card">
+          <div class="tag">Series de este ejercicio</div>
+          <div class="summary" id="no-sets-msg">Agregá series y luego guardá el ejercicio.</div>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Peso</th>
+                <th>Reps</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="sets-body"></tbody>
+          </table>
+
+          <label>
+            Peso (kg)
+            <input type="number" id="weight" step="0.5" min="0">
+          </label>
+          <label>
+            Repeticiones
+            <input type="number" id="reps" min="1">
+          </label>
+
+          <button type="button" id="add-set-btn" class="btn-small">Agregar serie</button>
+          <button type="button" id="save-exercise-btn">Guardar ejercicio</button>
+        </div>
+
+        <div class="card">
+          <div class="tag">Últimos ejercicios</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Rutina</th>
+                <th>Ejercicio</th>
+                <th>Series</th>
+              </tr>
+            </thead>
+            <tbody id="today-last-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Pestaña 2: Rutina -->
+      <section id="tab-rutina" class="view">
+        <div class="card">
+          <div class="tag">Nueva rutina</div>
+          <form id="routine-form">
+            <label>
+              Nombre de la rutina
+              <input type="text" id="routine-name" placeholder="Pecho/Lunes, Fullbody A, etc." required>
+            </label>
+
+            <label>
+              Agregar ejercicio
+              <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;">
+                <input type="text" id="routine-exercise-input" placeholder="Press banca, Sentadilla, etc." style="flex:2 1 60%;">
+                <input type="number" id="routine-exercise-sets-input" min="1" step="1" placeholder="Series" style="flex:1 1 30%;">
+                <button type="button" class="btn-small" id="add-exercise-btn">Agregar</button>
+              </div>
+            </label>
+
+            <div id="routine-exercise-temp-list" style="margin-top:6px; min-height:20px;"></div>
+
+            <button type="submit">Guardar rutina</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="tag">Rutinas guardadas</div>
+          <div id="routine-list" class="summary">Todavía no tenés rutinas.</div>
+        </div>
+      </section>
+
+      <!-- Pestaña 3: Stats -->
+      <section id="tab-stats" class="view">
+        <div class="card">
+          <div class="tag">Estadísticas rápidas</div>
+          <div class="summary" id="stats-total"></div>
+          <div class="summary" id="stats-max"></div>
+          <div class="summary" id="stats-week"></div>
+        </div>
+
+        <div class="card">
+          <div class="tag">Historial completo</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Rutina</th>
+                <th>Ejercicio</th>
+                <th>Series</th>
+                <th>Tonelaje</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="entries-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Barra inferior -->
+    <nav class="tab-bar">
+      <button class="tab-btn tab-btn-active" data-tab="hoy">
+        Hoy
+      </button>
+      <button class="tab-btn" data-tab="rutina">
+        Rutina
+      </button>
+      <button class="tab-btn" data-tab="stats">
+        Stats
+      </button>
+    </nav>
+  </div>
+
+  <!-- Modal seleccionar rutina -->
+  <div id="routine-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Elegí una rutina</h2>
+      <div id="routine-modal-list" class="summary"></div>
+      <button type="button" id="close-routine-modal" class="btn-small">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Modal seleccionar ejercicio -->
+  <div id="exercise-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Elegí un ejercicio</h2>
+      <div id="exercise-modal-list" class="summary"></div>
+      <button type="button" id="close-exercise-modal" class="btn-small">Cerrar</button>
+    </div>
   </div>
 
   <script>
-    const STORAGE_KEY = 'gymProgressEntriesV1';
-    const form = document.getElementById('entry-form');
-    const dateInput = document.getElementById('date');
-    const exerciseInput = document.getElementById('exercise');
+    const ROUTINES_KEY = 'gymRoutinesV2';
+    const ENTRIES_KEY = 'gymProgressEntriesV6';
+
+    // Hoy
+    const chooseRoutineBtn = document.getElementById('choose-routine-btn');
+    const chooseExerciseBtn = document.getElementById('choose-exercise-btn');
+    const selectedRoutineLabel = document.getElementById('selected-routine-label');
+    const selectedExerciseLabel = document.getElementById('selected-exercise-label');
+    const plannedSetsLabel = document.getElementById('planned-sets-label');
     const weightInput = document.getElementById('weight');
     const repsInput = document.getElementById('reps');
-    const notesInput = document.getElementById('notes');
-    const tbody = document.getElementById('entries-body');
+    const addSetBtn = document.getElementById('add-set-btn');
+    const saveExerciseBtn = document.getElementById('save-exercise-btn');
+    const setsBody = document.getElementById('sets-body');
+    const noSetsMsg = document.getElementById('no-sets-msg');
+    const tbodyTodayLast = document.getElementById('today-last-body');
 
-    // poner hoy por defecto
-    function setToday() {
-      const today = new Date().toISOString().slice(0,10);
-      dateInput.value = today;
+    // Rutina
+    const routineForm = document.getElementById('routine-form');
+    const routineNameInput = document.getElementById('routine-name');
+    const routineExerciseInput = document.getElementById('routine-exercise-input');
+    const routineExerciseSetsInput = document.getElementById('routine-exercise-sets-input');
+    const addExerciseRoutineBtn = document.getElementById('add-exercise-btn');
+    const tempExerciseListDiv = document.getElementById('routine-exercise-temp-list');
+    const routineListDiv = document.getElementById('routine-list');
+
+    // Stats / historial
+    const tbodyHistory = document.getElementById('entries-body');
+    const statsTotal = document.getElementById('stats-total');
+    const statsMax = document.getElementById('stats-max');
+    const statsWeek = document.getElementById('stats-week');
+
+    // Modales
+    const routineModal = document.getElementById('routine-modal');
+    const routineModalList = document.getElementById('routine-modal-list');
+    const closeRoutineModalBtn = document.getElementById('close-routine-modal');
+
+    const exerciseModal = document.getElementById('exercise-modal');
+    const exerciseModalList = document.getElementById('exercise-modal-list');
+    const closeExerciseModalBtn = document.getElementById('close-exercise-modal');
+
+    // Datos
+    let routines = [];
+    let entries = [];
+    let tempRoutineExercises = []; // { name, sets }
+    let tempSets = [];            // { weight, reps }
+
+    let currentRoutineId = null;
+    let currentExerciseName = null;
+    let currentExercisePlannedSets = null;
+
+    function todayString() {
+      return new Date().toISOString().slice(0, 10);
     }
 
-    let entries = [];
+    function loadRoutines() {
+      try {
+        const raw = localStorage.getItem(ROUTINES_KEY);
+        routines = raw ? JSON.parse(raw) : [];
+      } catch {
+        routines = [];
+      }
+    }
+
+    function saveRoutines() {
+      localStorage.setItem(ROUTINES_KEY, JSON.stringify(routines));
+    }
 
     function loadEntries() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(ENTRIES_KEY);
         entries = raw ? JSON.parse(raw) : [];
-      } catch(e) {
+      } catch {
         entries = [];
       }
     }
 
     function saveEntries() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries));
     }
 
-    function render() {
-      tbody.innerHTML = '';
-      // mostrar últimos primero
-      [...entries].reverse().forEach(entry => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${entry.date}</td>
-          <td>${entry.exercise}</td>
-          <td>${entry.weight} kg</td>
-          <td>${entry.reps}</td>
-          <td>${entry.notes || ''}</td>
+    function getOrderedEntries() {
+      return [...entries].sort((a, b) => {
+        if (a.date === b.date) return (a.createdAt || 0) - (b.createdAt || 0);
+        return a.date.localeCompare(b.date);
+      }).reverse();
+    }
+
+    // ---- Rutinas: UI ----
+    function renderTempExercises() {
+      if (!tempRoutineExercises.length) {
+        tempExerciseListDiv.textContent = 'Agregá ejercicios a la rutina (nombre + series).';
+        return;
+      }
+      tempExerciseListDiv.innerHTML = tempRoutineExercises
+        .map((ex, idx) => `<span class="pill">${idx + 1}. ${ex.name} (${ex.sets}x)</span>`)
+        .join(' ');
+    }
+
+    function renderRoutinesList() {
+      if (!routines.length) {
+        routineListDiv.textContent = 'Todavía no tenés rutinas.';
+        return;
+      }
+      routineListDiv.innerHTML = '';
+      routines.forEach(r => {
+        const wrapper = document.createElement('div');
+        wrapper.style.marginBottom = '10px';
+        const exercisesHtml = r.exercises.length
+          ? r.exercises
+              .map((e, i) => `<span class="pill">${i + 1}. ${e.name} (${e.sets}x)</span>`)
+              .join(' ')
+          : '<span class="summary">Sin ejercicios.</span>';
+
+        wrapper.innerHTML = `
+          <div class="summary"><strong>${r.name}</strong></div>
+          <div>${exercisesHtml}</div>
+          <button class="delete-btn btn-small" data-routine-id="${r.id}">Borrar rutina</button>
         `;
-        tbody.appendChild(tr);
+        routineListDiv.appendChild(wrapper);
       });
     }
 
-    form.addEventListener('submit', (e) => {
+    routineListDiv.addEventListener('click', (e) => {
+      if (e.target.matches('.delete-btn[data-routine-id]')) {
+        const id = e.target.getAttribute('data-routine-id');
+        if (!confirm('¿Eliminar esta rutina?')) return;
+        routines = routines.filter(r => String(r.id) !== String(id));
+        saveRoutines();
+        renderRoutinesList();
+
+        if (currentRoutineId && String(currentRoutineId) === String(id)) {
+          currentRoutineId = null;
+          currentExerciseName = null;
+          currentExercisePlannedSets = null;
+          selectedRoutineLabel.textContent = 'Ninguna';
+          selectedExerciseLabel.textContent = 'Ninguno';
+          plannedSetsLabel.textContent = '-';
+          tempSets = [];
+          renderTempSets();
+        }
+      }
+    });
+
+    addExerciseRoutineBtn.addEventListener('click', () => {
+      const name = routineExerciseInput.value.trim();
+      const sets = Number(routineExerciseSetsInput.value);
+      if (!name || !sets || sets <= 0) {
+        alert('Completá nombre y series (>0).');
+        return;
+      }
+      tempRoutineExercises.push({ name, sets });
+      routineExerciseInput.value = '';
+      routineExerciseSetsInput.value = '';
+      renderTempExercises();
+      routineExerciseInput.focus();
+    });
+
+    routineForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const entry = {
-        date: dateInput.value,
-        exercise: exerciseInput.value.trim(),
-        weight: Number(weightInput.value),
-        reps: Number(repsInput.value),
-        notes: notesInput.value.trim()
+      const name = routineNameInput.value.trim();
+      if (!name) {
+        alert('Poné un nombre a la rutina.');
+        return;
+      }
+      if (!tempRoutineExercises.length) {
+        alert('Agregá al menos un ejercicio.');
+        return;
+      }
+      const routine = {
+        id: Date.now(),
+        name,
+        exercises: [...tempRoutineExercises], // {name, sets}
+        createdAt: Date.now()
       };
+      routines.push(routine);
+      saveRoutines();
+      tempRoutineExercises = [];
+      routineForm.reset();
+      renderTempExercises();
+      renderRoutinesList();
+      alert('Rutina guardada.');
+    });
+
+    // ---- Modales selección ----
+    function openRoutineModal() {
+      if (!routines.length) {
+        alert('Primero creá una rutina en la pestaña Rutina.');
+        return;
+      }
+      routineModalList.innerHTML = '';
+      routines.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'modal-item';
+        const exercisesHtml = r.exercises.length
+          ? r.exercises.map(e => `<span class="pill">${e.name} (${e.sets}x)</span>`).join(' ')
+          : '<span class="summary">Sin ejercicios.</span>';
+        div.innerHTML = `
+          <div class="modal-item-title">${r.name}</div>
+          <div>${exercisesHtml}</div>
+          <button class="btn-small" data-select-routine="${r.id}">Seleccionar</button>
+        `;
+        routineModalList.appendChild(div);
+      });
+      routineModal.classList.remove('hidden');
+    }
+
+    function closeRoutineModal() {
+      routineModal.classList.add('hidden');
+    }
+
+    routineModalList.addEventListener('click', (e) => {
+      const id = e.target.getAttribute('data-select-routine');
+      if (!id) return;
+      const routine = routines.find(r => String(r.id) === String(id));
+      if (!routine) return;
+      currentRoutineId = routine.id;
+      selectedRoutineLabel.textContent = routine.name;
+      // al cambiar rutina, se resetea ejercicio y series
+      currentExerciseName = null;
+      currentExercisePlannedSets = null;
+      selectedExerciseLabel.textContent = 'Ninguno';
+      plannedSetsLabel.textContent = '-';
+      tempSets = [];
+      renderTempSets();
+      chooseExerciseBtn.disabled = !routine.exercises.length;
+      closeRoutineModal();
+    });
+
+    closeRoutineModalBtn.addEventListener('click', closeRoutineModal);
+
+    function openExerciseModal() {
+      if (!currentRoutineId) {
+        alert('Primero elegí una rutina.');
+        return;
+      }
+      const routine = routines.find(r => String(r.id) === String(currentRoutineId));
+      if (!routine || !routine.exercises.length) {
+        alert('Esta rutina no tiene ejercicios.');
+        return;
+      }
+      exerciseModalList.innerHTML = '';
+      routine.exercises.forEach((ex, index) => {
+        const div = document.createElement('div');
+        div.className = 'modal-item';
+        div.innerHTML = `
+          <div class="modal-item-title">${ex.name}</div>
+          <div class="summary">Series planificadas: ${ex.sets}</div>
+          <button class="btn-small" data-select-exercise-index="${index}">Seleccionar</button>
+        `;
+        exerciseModalList.appendChild(div);
+      });
+      exerciseModal.classList.remove('hidden');
+    }
+
+    function closeExerciseModal() {
+      exerciseModal.classList.add('hidden');
+    }
+
+    exerciseModalList.addEventListener('click', (e) => {
+      const idxStr = e.target.getAttribute('data-select-exercise-index');
+      if (idxStr === null) return;
+      const idx = Number(idxStr);
+      const routine = routines.find(r => String(r.id) === String(currentRoutineId));
+      if (!routine || !routine.exercises[idx]) return;
+      const ex = routine.exercises[idx];
+      currentExerciseName = ex.name;
+      currentExercisePlannedSets = ex.sets;
+      selectedExerciseLabel.textContent = ex.name;
+      plannedSetsLabel.textContent = ex.sets;
+      tempSets = [];
+      renderTempSets();
+      closeExerciseModal();
+    });
+
+    closeExerciseModalBtn.addEventListener('click', closeExerciseModal);
+
+    chooseRoutineBtn.addEventListener('click', openRoutineModal);
+    chooseExerciseBtn.addEventListener('click', openExerciseModal);
+
+    // ---- Series temporales en HOY ----
+    function renderTempSets() {
+      setsBody.innerHTML = '';
+      if (!tempSets.length) {
+        noSetsMsg.style.display = 'block';
+        return;
+      }
+      noSetsMsg.style.display = 'none';
+      tempSets.forEach((s, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${s.weight} kg</td>
+          <td>${s.reps}</td>
+          <td><button class="delete-btn btn-small" data-set-index="${idx}">X</button></td>
+        `;
+        setsBody.appendChild(tr);
+      });
+    }
+
+    setsBody.addEventListener('click', (e) => {
+      const idxStr = e.target.getAttribute('data-set-index');
+      if (idxStr === null) return;
+      const idx = Number(idxStr);
+      tempSets.splice(idx, 1);
+      renderTempSets();
+    });
+
+    addSetBtn.addEventListener('click', () => {
+      if (!currentExerciseName) {
+        alert('Elegí un ejercicio primero.');
+        return;
+      }
+      const w = Number(weightInput.value);
+      const r = Number(repsInput.value);
+      if (!w || w <= 0 || !r || r <= 0) {
+        alert('Peso y repeticiones deben ser mayores a 0.');
+        return;
+      }
+      if (currentExercisePlannedSets && tempSets.length >= currentExercisePlannedSets) {
+        alert(`Ya cargaste las ${currentExercisePlannedSets} series planificadas.`);
+        return;
+      }
+      tempSets.push({ weight: w, reps: r });
+      weightInput.value = '';
+      repsInput.value = '';
+      renderTempSets();
+      weightInput.focus();
+    });
+
+    saveExerciseBtn.addEventListener('click', () => {
+      if (!currentRoutineId) {
+        alert('Elegí una rutina.');
+        return;
+      }
+      if (!currentExerciseName) {
+        alert('Elegí un ejercicio.');
+        return;
+      }
+      if (!tempSets.length) {
+        alert('Agregá al menos una serie.');
+        return;
+      }
+
+      if (currentExercisePlannedSets && tempSets.length < currentExercisePlannedSets) {
+        const falta = currentExercisePlannedSets - tempSets.length;
+        if (!confirm(`Planificaste ${currentExercisePlannedSets} series y cargaste ${tempSets.length}. Faltan ${falta}. ¿Guardar igual?`)) {
+          return;
+        }
+      }
+
+      const routine = routines.find(r => String(r.id) === String(currentRoutineId));
+      const routineName = routine ? routine.name : '';
+
+      const entry = {
+        id: Date.now(),
+        date: todayString(),
+        routineId: currentRoutineId,
+        routineName,
+        exercise: currentExerciseName,
+        plannedSets: currentExercisePlannedSets,
+        sets: [...tempSets],
+        createdAt: Date.now()
+      };
+
       entries.push(entry);
       saveEntries();
-      render();
-      form.reset();
-      setToday();
-      exerciseInput.focus();
+      tempSets = [];
+      renderTempSets();
+      renderAll();
+      alert('Ejercicio guardado.');
+    });
+
+    // ---- Render de HOY / Stats / Historial ----
+    function setsToString(entry) {
+      return entry.sets.map(s => `${s.weight}x${s.reps}`).join(' | ');
+    }
+
+    function entryTonnage(entry) {
+      return entry.sets.reduce((sum, s) => sum + s.weight * s.reps, 0);
+    }
+
+    function renderToday() {
+      tbodyTodayLast.innerHTML = '';
+      const ordered = getOrderedEntries().slice(0, 8);
+      ordered.forEach(entry => {
+        const planned = entry.plannedSets ? ` (${entry.sets.length}/${entry.plannedSets})` : '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${entry.date}</td>
+          <td>${entry.routineName || '-'}</td>
+          <td>${entry.exercise}</td>
+          <td>${setsToString(entry)}${planned}</td>
+        `;
+        tbodyTodayLast.appendChild(tr);
+      });
+    }
+
+    function renderHistory() {
+      tbodyHistory.innerHTML = '';
+      const ordered = getOrderedEntries();
+
+      ordered.forEach(entry => {
+        const planned = entry.plannedSets ? ` (${entry.sets.length}/${entry.plannedSets})` : '';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${entry.date}</td>
+          <td>${entry.routineName || '-'}</td>
+          <td>${entry.exercise}</td>
+          <td>${setsToString(entry)}${planned}</td>
+          <td>${entryTonnage(entry)}</td>
+          <td><button class="delete-btn btn-small" data-id="${entry.id}">Borrar</button></td>
+        `;
+        tbodyHistory.appendChild(tr);
+      });
+    }
+
+    function renderStats() {
+      if (!entries.length) {
+        statsTotal.textContent = 'No hay entrenamientos aún.';
+        statsMax.textContent = '';
+        statsWeek.textContent = '';
+        return;
+      }
+
+      statsTotal.textContent = `Ejercicios registrados: ${entries.length}`;
+
+      const max = entries.reduce((m, e) => {
+        const localMax = e.sets.reduce((lm, s) => Math.max(lm, s.weight), 0);
+        return Math.max(m, localMax);
+      }, 0);
+      statsMax.textContent = `Peso máximo registrado: ${max} kg`;
+
+      const hoy = new Date();
+      const semanaMs = 7 * 24 * 60 * 60 * 1000;
+      let volSemana = 0;
+
+      entries.forEach(e => {
+        const d = new Date(e.date + 'T00:00:00');
+        if (hoy - d <= semanaMs) {
+          volSemana += entryTonnage(e);
+        }
+      });
+
+      statsWeek.textContent = `Tonelaje últimos 7 días: ${volSemana}`;
+    }
+
+    function renderAll() {
+      renderToday();
+      renderHistory();
+      renderStats();
+    }
+
+    tbodyHistory.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-btn')) {
+        const id = Number(e.target.getAttribute('data-id'));
+        if (!confirm('¿Eliminar este registro?')) return;
+        entries = entries.filter(en => en.id !== id);
+        saveEntries();
+        renderAll();
+      }
+    });
+
+    // Tabs
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const views = {
+      hoy: document.getElementById('tab-hoy'),
+      rutina: document.getElementById('tab-rutina'),
+      stats: document.getElementById('tab-stats')
+    };
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        Object.values(views).forEach(v => v.classList.remove('active'));
+        views[target].classList.add('active');
+
+        tabButtons.forEach(b => b.classList.remove('tab-btn-active'));
+        btn.classList.add('tab-btn-active');
+      });
     });
 
     // init
-    setToday();
+    loadRoutines();
     loadEntries();
-    render();
+    renderTempExercises();
+    renderRoutinesList();
+    renderTempSets();
+    renderAll();
   </script>
 </body>
 </html>
