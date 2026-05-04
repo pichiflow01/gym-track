@@ -6,14 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root {
-      /* Paleta opción 2: base oscura + verdes + lima suave */
-      --bg: #020617;              /* fondo principal (negro azulado) */
+      /* Paleta: base oscura + verdes más apagados + acento verde suave */
+      --bg: #020617;              /* fondo principal */
       --bg-alt: #030712;          /* variación de fondo */
       --card: #111827;            /* tarjetas gris-azul oscuro */
       --card-soft: #020617;
-      --accent: #A3E635;          /* verde lima suave (acento) */
-      --accent-soft: rgba(163,230,53,0.2);
-      --accent-strong: #BEF264;   /* lima un poco más clara */
+      --accent: #4ADE80;          /* verde suave (menos brillante) */
+      --accent-soft: rgba(74,222,128,0.18);
+      --accent-strong: #22C55E;   /* verde un poco más intenso para hover */
       --text: #E5E7EB;
       --muted: #9CA3AF;
       --border: rgba(148,163,184,0.3);
@@ -26,8 +26,8 @@
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:
-        radial-gradient(circle at 0% 0%, rgba(22,163,74,0.18) 0, transparent 40%),
-        radial-gradient(circle at 100% 0%, rgba(163,230,53,0.14) 0, transparent 45%),
+        radial-gradient(circle at 0% 0%, rgba(22,163,74,0.12) 0, transparent 40%),
+        radial-gradient(circle at 100% 0%, rgba(74,222,128,0.10) 0, transparent 45%),
         var(--bg);
       color: var(--text);
     }
@@ -72,13 +72,12 @@
 
     form, .card {
       position: relative;
-      background: linear-gradient(145deg, var(--card), #020617);
+      background: linear-gradient(145deg, var(--card), var(--bg-alt));
       padding: 14px 14px 12px;
       border-radius: 18px;
       margin-bottom: 16px;
       border: 1px solid var(--border);
-      box-shadow:
-        0 20px 35px rgba(15,23,42,0.85);
+      box-shadow: 0 18px 30px rgba(15,23,42,0.9);
     }
     form::before, .card::before {
       content: "";
@@ -86,13 +85,13 @@
       inset: 0;
       border-radius: 18px;
       padding: 1px;
-      background: linear-gradient(135deg, rgba(163,230,53,0.45), transparent 40%);
+      background: linear-gradient(135deg, rgba(74,222,128,0.35), transparent 40%);
       -webkit-mask:
         linear-gradient(#000 0 0) content-box,
         linear-gradient(#000 0 0);
       -webkit-mask-composite: xor;
               mask-composite: exclude;
-      opacity: .45;
+      opacity: .35;
       pointer-events: none;
     }
 
@@ -285,6 +284,61 @@
     @media (max-width: 380px) {
       table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     }
+
+    /* Modales */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: #020617;  /* fondo sólido: no se ve nada "cortado" detrás */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: radial-gradient(circle at 0 0, rgba(15,23,42,0.96), var(--bg-alt));
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.4);
+      max-width: 380px;
+      width: 92%;
+      max-height: 78vh;
+      overflow-y: auto;
+      padding: 14px 14px 12px;
+      box-shadow: 0 24px 40px rgba(0,0,0,0.9);
+    }
+    .modal h2 {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .hidden { display: none; }
+
+    .modal-item {
+      padding: 9px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(148,163,184,0.35);
+      background: rgba(15,23,42,0.9);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background .12s ease, transform .08s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    .modal-item:hover {
+      background: rgba(22,101,52,0.7);
+      border-color: rgba(74,222,128,0.8);
+      box-shadow: 0 10px 22px rgba(0,0,0,0.9);
+      transform: translateY(-1px);
+    }
+    .modal-item:active {
+      transform: scale(0.985);
+      opacity: 0.95;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.9);
+    }
+    .modal-item-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
   </style>
 </head>
 <body>
@@ -406,7 +460,6 @@
       </section>
     </main>
 
-    <!-- Barra inferior -->
     <nav class="tab-bar">
       <button class="tab-btn tab-btn-active" data-tab="hoy">Hoy</button>
       <button class="tab-btn" data-tab="rutina">Rutina</button>
@@ -436,7 +489,6 @@
     const ROUTINES_KEY = 'gymRoutinesV2';
     const ENTRIES_KEY = 'gymProgressEntriesV6';
 
-    // HOY
     const chooseRoutineBtn = document.getElementById('choose-routine-btn');
     const chooseExerciseBtn = document.getElementById('choose-exercise-btn');
     const selectedRoutineLabel = document.getElementById('selected-routine-label');
@@ -448,7 +500,6 @@
     const setsBody = document.getElementById('sets-body');
     const tbodyTodayLast = document.getElementById('today-last-body');
 
-    // RUTINA
     const routineForm = document.getElementById('routine-form');
     const routineNameInput = document.getElementById('routine-name');
     const routineExerciseInput = document.getElementById('routine-exercise-input');
@@ -456,12 +507,10 @@
     const tempExerciseListDiv = document.getElementById('routine-exercise-temp-list');
     const routineListDiv = document.getElementById('routine-list');
 
-    // STATS
     const statsRoutineSelect = document.getElementById('stats-routine-select');
     const statsExerciseSelect = document.getElementById('stats-exercise-select');
     const exerciseHistoryBody = document.getElementById('exercise-history-body');
 
-    // Modales
     const routineModal = document.getElementById('routine-modal');
     const routineModalList = document.getElementById('routine-modal-list');
     const closeRoutineModalBtn = document.getElementById('close-routine-modal');
@@ -470,7 +519,6 @@
     const exerciseModalList = document.getElementById('exercise-modal-list');
     const closeExerciseModalBtn = document.getElementById('close-exercise-modal');
 
-    // Datos
     let routines = [];
     let entries = [];
     let tempRoutineExercises = [];
@@ -527,7 +575,7 @@
       return entry.sets.map(s => `${s.weight}kg x ${s.reps}`).join(' | ');
     }
 
-    // RUTINA UI
+    // Rutinas
     function renderTempExercises() {
       if (!tempRoutineExercises.length) {
         tempExerciseListDiv.textContent = 'Agregá ejercicios a la rutina.';
@@ -548,9 +596,7 @@
         const wrapper = document.createElement('div');
         wrapper.style.marginBottom = '10px';
         const exercisesHtml = r.exercises && r.exercises.length
-          ? r.exercises
-              .map((e, i) => `<span class="pill">${i + 1}. ${getExerciseName(e)}</span>`)
-              .join(' ')
+          ? r.exercises.map((e, i) => `<span class="pill">${i + 1}. ${getExerciseName(e)}</span>`).join(' ')
           : '<span class="summary">Sin ejercicios.</span>';
 
         wrapper.innerHTML = `
@@ -597,14 +643,8 @@
     routineForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const name = routineNameInput.value.trim();
-      if (!name) {
-        alert('Poné un nombre a la rutina.');
-        return;
-      }
-      if (!tempRoutineExercises.length) {
-        alert('Agregá al menos un ejercicio.');
-        return;
-      }
+      if (!name) { alert('Poné un nombre a la rutina.'); return; }
+      if (!tempRoutineExercises.length) { alert('Agregá al menos un ejercicio.'); return; }
       const routine = {
         id: Date.now(),
         name,
@@ -621,7 +661,7 @@
       alert('Rutina guardada.');
     });
 
-    // Modales selección
+    // Modales
     function openRoutineModal() {
       if (!routines.length) {
         alert('Primero creá una rutina en la pestaña Rutina.');
@@ -708,7 +748,7 @@
     chooseRoutineBtn.addEventListener('click', openRoutineModal);
     chooseExerciseBtn.addEventListener('click', openExerciseModal);
 
-    // HOY: series
+    // HOY
     function renderTempSets() {
       setsBody.innerHTML = '';
       tempSets.forEach((s, idx) => {
