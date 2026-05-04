@@ -500,14 +500,13 @@
         </div>
 
         <div class="card">
-          <div class="tag">Historial completo</div>
+          <div class="tag">Historial de entrenamientos</div>
           <table>
             <thead>
               <tr>
                 <th>Fecha</th>
                 <th>Rutina</th>
-                <th>Ejercicio</th>
-                <th>Series</th>
+                <th>Ejercicios</th>
                 <th>Tonelaje</th>
                 <th></th>
               </tr>
@@ -547,6 +546,15 @@
       <h2>Elegí un ejercicio</h2>
       <div id="exercise-modal-list" class="summary"></div>
       <button type="button" id="close-exercise-modal" class="btn-small">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Modal detalle de día -->
+  <div id="day-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Detalle del día</h2>
+      <div id="day-modal-body" class="summary"></div>
+      <button type="button" id="close-day-modal" class="btn-small">Cerrar</button>
     </div>
   </div>
 
@@ -592,6 +600,10 @@
     const exerciseModalList = document.getElementById('exercise-modal-list');
     const closeExerciseModalBtn = document.getElementById('close-exercise-modal');
 
+    const dayModal = document.getElementById('day-modal');
+    const dayModalBody = document.getElementById('day-modal-body');
+    const closeDayModalBtn = document.getElementById('close-day-modal');
+
     // Datos
     let routines = [];
     let entries = [];
@@ -600,6 +612,9 @@
 
     let currentRoutineId = null;
     let currentExerciseName = null;
+
+    // Agrupaciones por día para el historial
+    let dayGroups = []; // [{date, routineName, entries, totalVolume}]
 
     // Chart
     let statsChart = null;
@@ -739,7 +754,7 @@
       alert('Rutina guardada.');
     });
 
-    // ---- Modales selección ----
+    // ---- Modales selección rutina/ejercicio ----
     function openRoutineModal() {
       if (!routines.length) {
         alert('Primero creá una rutina en la pestaña Rutina.');
@@ -835,6 +850,30 @@
     chooseRoutineBtn.addEventListener('click', openRoutineModal);
     chooseExerciseBtn.addEventListener('click', openExerciseModal);
 
+    // ---- Modal detalle de día ----
+    function openDayModal(groupIndex) {
+      const g = dayGroups[groupIndex];
+      if (!g) return;
+
+      const ejerciciosHtml = g.entries
+        .map(en => `<div>• <strong>${en.exercise}</strong>: ${setsToString(en)} (Tonelaje: ${entryTonnage(en)})</div>`)
+        .join('');
+
+      dayModalBody.innerHTML = `
+        <div style="margin-bottom:6px;">Fecha: <strong>${g.date}</strong></div>
+        <div style="margin-bottom:6px;">Rutina: <strong>${g.routineName || '-'}</strong></div>
+        <div style="margin:8px 0;"><strong>Ejercicios</strong></div>
+        ${ejerciciosHtml || '<div>No hay ejercicios.</div>'}
+      `;
+      dayModal.classList.remove('hidden');
+    }
+
+    function closeDayModal() {
+      dayModal.classList.add('hidden');
+    }
+
+    closeDayModalBtn.addEventListener('click', closeDayModal);
+
     // ---- Series temporales en HOY ----
     function renderTempSets() {
       setsBody.innerHTML = '';
@@ -912,6 +951,8 @@
     });
 
     // ---- Stats: selects y gráfico ----
+    let statsChart = null;
+
     function renderStatsRoutineOptions() {
       statsRoutineSelect.innerHTML = '';
       const withExercises = routines.filter(r => r.exercises && r.exercises.length);
@@ -1009,7 +1050,6 @@
         return;
       }
 
-      // agrupar por fecha y tomar el peso máximo de ese día
       const byDate = new Map();
       filtered.forEach(e => {
         const maxWeight = e.sets.reduce((m, s) => Math.max(m, s.weight), 0);
@@ -1021,7 +1061,7 @@
       const weights = dates.map(d => byDate.get(d));
 
       const maxWeight = Math.max(...weights);
-      const yMax = Math.ceil(maxWeight * 1.2 / 5) * 5 || 5; // escala fija con margen
+      const yMax = Math.ceil((maxWeight * 1.2 || 5) / 5) * 5;
 
       const ctx = document.getElementById('stats-chart').getContext('2d');
       if (statsChart) {
@@ -1071,7 +1111,7 @@
         `Último peso registrado: ${lastWeight} kg (${lastDate}). Total de días registrados: ${dates.length}.`;
     }
 
-    // ---- Historial y "hoy" ----
+    // ---- Historial por día y "hoy" ----
     function setsToString(entry) {
       return entry.sets.map(s => `${s.weight}x${s.reps}`).join(' | ');
     }
@@ -1096,20 +1136,50 @@
 
     function renderHistory() {
       tbodyHistory.innerHTML = '';
-      const ordered = getOrderedEntries();
+      dayGroups = [];
 
-      ordered.forEach(entry => {
+      const ordered = getOrderedEntries();
+      const groupsMap = new Map();
+
+      ordered.forEach(e => {
+        const routineName = e.routineName || '-';
+        const key = `${e.date}||${routineName}`;
+        if (!groupsMap.has(key)) {
+          groupsMap.set(key, {
+            date: e.date,
+            routineName,
+            entries: [],
+            totalVolume: 0
+          });
+        }
+        const g = groupsMap.get(key);
+        g.entries.push(e);
+        g.totalVolume += entryTonnage(e);
+      });
+
+      dayGroups = Array.from(groupsMap.values()).sort((a, b) => {
+        // ordenar por fecha descendente
+        return b.date.localeCompare(a.date);
+      });
+
+      dayGroups.forEach((g, idx) => {
         const tr = document.createElement('tr');
+        tr.setAttribute('data-day-index', idx);
         tr.innerHTML = `
-          <td>${entry.date}</td>
-          <td>${entry.routineName || '-'}</td>
-          <td>${entry.exercise}</td>
-          <td>${setsToString(entry)}</td>
-          <td>${entryTonnage(entry)}</td>
-          <td><button class="delete-btn btn-small" data-id="${entry.id}">Borrar</button></td>
+          <td>${g.date}</td>
+          <td>${g.routineName}</td>
+          <td>${g.entries.length} ejercicios</td>
+          <td>${g.totalVolume}</td>
+          <td><button class="delete-btn btn-small" data-day-index="${idx}">Borrar</button></td>
         `;
         tbodyHistory.appendChild(tr);
       });
+
+      if (!dayGroups.length) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="5">Todavía no hay entrenamientos.</td>`;
+        tbodyHistory.appendChild(tr);
+      }
     }
 
     function renderAll() {
@@ -1118,13 +1188,26 @@
     }
 
     tbodyHistory.addEventListener('click', (e) => {
-      if (e.target.classList.contains('delete-btn')) {
-        const id = Number(e.target.getAttribute('data-id'));
-        if (!confirm('¿Eliminar este registro?')) return;
-        entries = entries.filter(en => en.id !== id);
+      const delIdxStr = e.target.getAttribute('data-day-index');
+      if (delIdxStr !== null) {
+        // borrar entrenamiento completo (todas las entries de ese día/rutina)
+        const idx = Number(delIdxStr);
+        const g = dayGroups[idx];
+        if (!g) return;
+        if (!confirm(`¿Eliminar el entrenamiento del ${g.date} (${g.routineName})?`)) return;
+
+        entries = entries.filter(
+          en => !(en.date === g.date && (en.routineName || '-') === g.routineName)
+        );
         saveEntries();
         renderAll();
+        return;
       }
+
+      const row = e.target.closest('tr[data-day-index]');
+      if (!row) return;
+      const dayIdx = Number(row.getAttribute('data-day-index'));
+      openDayModal(dayIdx);
     });
 
     // Tabs
