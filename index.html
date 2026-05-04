@@ -326,34 +326,28 @@
       }
     }
 
-    /* Ajustes específicos para celulares */
     @media (max-width: 480px) {
       body {
         font-size: 16px;
       }
-
       main {
         padding: 12px 10px 96px;
       }
-
       header span {
         font-size: 0.95rem;
       }
-
       input,
       select,
       textarea {
         font-size: 16px;
         padding: 9px 12px;
       }
-
       form,
       .card {
         padding: 12px 12px 10px;
         border-radius: 14px;
         margin-bottom: 12px;
       }
-
       button {
         min-height: 40px;
       }
@@ -361,14 +355,12 @@
         min-height: 34px;
         padding-inline: 10px;
       }
-
       table {
         font-size: 0.78rem;
       }
       th, td {
         padding: 6px 4px;
       }
-
       .tab-bar {
         height: 64px;
       }
@@ -377,7 +369,6 @@
       }
     }
 
-    /* En pantallas muy angostas, permitir scroll horizontal en tablas grandes */
     @media (max-width: 380px) {
       table {
         display: block;
@@ -491,27 +482,16 @@
           </label>
         </div>
 
-        <div class="card" style="height:320px;">
-          <div class="tag">Peso en el tiempo</div>
-          <div style="position:relative; height:240px;">
-            <canvas id="stats-chart"></canvas>
-          </div>
-          <div class="summary" id="stats-chart-summary">Seleccioná rutina y ejercicio para ver el gráfico.</div>
-        </div>
-
         <div class="card">
           <div class="tag">Historial de entrenamientos</div>
           <table>
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Rutina</th>
-                <th>Ejercicios</th>
-                <th>Tonelaje</th>
-                <th></th>
+                <th>Series</th>
               </tr>
             </thead>
-            <tbody id="entries-body"></tbody>
+            <tbody id="exercise-history-body"></tbody>
           </table>
         </div>
       </section>
@@ -549,18 +529,6 @@
     </div>
   </div>
 
-  <!-- Modal detalle de día -->
-  <div id="day-modal" class="modal hidden">
-    <div class="modal-content">
-      <h2>Detalle del día</h2>
-      <div id="day-modal-body" class="summary"></div>
-      <button type="button" id="close-day-modal" class="btn-small">Cerrar</button>
-    </div>
-  </div>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <script>
     const ROUTINES_KEY = 'gymRoutinesV2';
     const ENTRIES_KEY = 'gymProgressEntriesV6';
@@ -585,11 +553,10 @@
     const tempExerciseListDiv = document.getElementById('routine-exercise-temp-list');
     const routineListDiv = document.getElementById('routine-list');
 
-    // Stats / historial
+    // Stats
     const statsRoutineSelect = document.getElementById('stats-routine-select');
     const statsExerciseSelect = document.getElementById('stats-exercise-select');
-    const statsChartSummary = document.getElementById('stats-chart-summary');
-    const tbodyHistory = document.getElementById('entries-body');
+    const exerciseHistoryBody = document.getElementById('exercise-history-body');
 
     // Modales
     const routineModal = document.getElementById('routine-modal');
@@ -600,10 +567,6 @@
     const exerciseModalList = document.getElementById('exercise-modal-list');
     const closeExerciseModalBtn = document.getElementById('close-exercise-modal');
 
-    const dayModal = document.getElementById('day-modal');
-    const dayModalBody = document.getElementById('day-modal-body');
-    const closeDayModalBtn = document.getElementById('close-day-modal');
-
     // Datos
     let routines = [];
     let entries = [];
@@ -612,12 +575,6 @@
 
     let currentRoutineId = null;
     let currentExerciseName = null;
-
-    // Agrupaciones por día para el historial
-    let dayGroups = []; // [{date, routineName, entries, totalVolume}]
-
-    // Chart
-    let statsChart = null;
 
     function todayString() {
       return new Date().toISOString().slice(0, 10);
@@ -656,11 +613,16 @@
       }).reverse();
     }
 
-    // ---- Rutinas: UI ----
+    // ---- Helpers ----
     function getExerciseName(ex) {
       return typeof ex === 'string' ? ex : (ex && ex.name) || '';
     }
 
+    function setsToString(entry) {
+      return entry.sets.map(s => `${s.weight}x${s.reps}`).join(' | ');
+    }
+
+    // ---- Rutinas UI ----
     function renderTempExercises() {
       if (!tempRoutineExercises.length) {
         tempExerciseListDiv.textContent = 'Agregá ejercicios a la rutina.';
@@ -850,31 +812,7 @@
     chooseRoutineBtn.addEventListener('click', openRoutineModal);
     chooseExerciseBtn.addEventListener('click', openExerciseModal);
 
-    // ---- Modal detalle de día ----
-    function openDayModal(groupIndex) {
-      const g = dayGroups[groupIndex];
-      if (!g) return;
-
-      const ejerciciosHtml = g.entries
-        .map(en => `<div>• <strong>${en.exercise}</strong>: ${setsToString(en)} (Tonelaje: ${entryTonnage(en)})</div>`)
-        .join('');
-
-      dayModalBody.innerHTML = `
-        <div style="margin-bottom:6px;">Fecha: <strong>${g.date}</strong></div>
-        <div style="margin-bottom:6px;">Rutina: <strong>${g.routineName || '-'}</strong></div>
-        <div style="margin:8px 0;"><strong>Ejercicios</strong></div>
-        ${ejerciciosHtml || '<div>No hay ejercicios.</div>'}
-      `;
-      dayModal.classList.remove('hidden');
-    }
-
-    function closeDayModal() {
-      dayModal.classList.add('hidden');
-    }
-
-    closeDayModalBtn.addEventListener('click', closeDayModal);
-
-    // ---- Series temporales en HOY ----
+    // ---- Hoy: series temporales ----
     function renderTempSets() {
       setsBody.innerHTML = '';
       tempSets.forEach((s, idx) => {
@@ -946,11 +884,29 @@
       saveEntries();
       tempSets = [];
       renderTempSets();
-      renderAll();
+      renderToday();
+      // Si en Stats está seleccionado el mismo ejercicio, actualizamos tabla allí también
+      if (statsRoutineSelect.value && statsExerciseSelect.value) {
+        renderExerciseHistory(statsRoutineSelect.value, statsExerciseSelect.value);
+      }
       alert('Ejercicio guardado.');
     });
 
-    // ---- Stats: selects y gráfico ----
+    function renderToday() {
+      tbodyTodayLast.innerHTML = '';
+      const today = todayString();
+      const todays = getOrderedEntries().filter(e => e.date === today).slice(0, 8);
+      todays.forEach(entry => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${entry.exercise}</td>
+          <td>${setsToString(entry)}</td>
+        `;
+        tbodyTodayLast.appendChild(tr);
+      });
+    }
+
+    // ---- Stats: selects + historial por ejercicio ----
     function renderStatsRoutineOptions() {
       statsRoutineSelect.innerHTML = '';
       const withExercises = routines.filter(r => r.exercises && r.exercises.length);
@@ -959,7 +915,7 @@
         statsRoutineSelect.innerHTML = '<option value="">Creá una rutina con ejercicios primero</option>';
         statsExerciseSelect.innerHTML = '<option value="">Sin ejercicios</option>';
         statsExerciseSelect.disabled = true;
-        updateStatsChart(null, null);
+        clearExerciseHistory();
         return;
       }
 
@@ -977,7 +933,11 @@
 
       statsExerciseSelect.innerHTML = '<option value="">Seleccioná una rutina</option>';
       statsExerciseSelect.disabled = true;
-      updateStatsChart(null, null);
+      clearExerciseHistory();
+    }
+
+    function clearExerciseHistory() {
+      exerciseHistoryBody.innerHTML = '<tr><td colspan="2">Seleccioná rutina y ejercicio.</td></tr>';
     }
 
     statsRoutineSelect.addEventListener('change', () => {
@@ -985,7 +945,7 @@
       if (!id) {
         statsExerciseSelect.innerHTML = '<option value="">Seleccioná una rutina</option>';
         statsExerciseSelect.disabled = true;
-        updateStatsChart(null, null);
+        clearExerciseHistory();
         return;
       }
 
@@ -993,7 +953,7 @@
       if (!routine || !routine.exercises || !routine.exercises.length) {
         statsExerciseSelect.innerHTML = '<option value="">Esta rutina no tiene ejercicios</option>';
         statsExerciseSelect.disabled = true;
-        updateStatsChart(null, null);
+        clearExerciseHistory();
         return;
       }
 
@@ -1012,197 +972,39 @@
         statsExerciseSelect.appendChild(opt);
       });
 
-      updateStatsChart(null, null);
+      clearExerciseHistory();
     });
 
     statsExerciseSelect.addEventListener('change', () => {
       const routineId = statsRoutineSelect.value;
       const exerciseName = statsExerciseSelect.value;
       if (!routineId || !exerciseName) {
-        updateStatsChart(null, null);
+        clearExerciseHistory();
         return;
       }
-      updateStatsChart(routineId, exerciseName);
+      renderExerciseHistory(routineId, exerciseName);
     });
 
-    function updateStatsChart(routineId, exerciseName) {
-      if (!routineId || !exerciseName) {
-        if (statsChart) {
-          statsChart.destroy();
-          statsChart = null;
-        }
-        statsChartSummary.textContent = 'Seleccioná rutina y ejercicio para ver el gráfico.';
-        return;
-      }
-
-      const filtered = entries.filter(
+    function renderExerciseHistory(routineId, exerciseName) {
+      exerciseHistoryBody.innerHTML = '';
+      const filtered = getOrderedEntries().filter(
         e => String(e.routineId) === String(routineId) && e.exercise === exerciseName
       );
 
       if (!filtered.length) {
-        if (statsChart) {
-          statsChart.destroy();
-          statsChart = null;
-        }
-        statsChartSummary.textContent = 'Todavía no hay registros para ese ejercicio en esa rutina.';
+        exerciseHistoryBody.innerHTML = '<tr><td colspan="2">Todavía no hay registros para ese ejercicio.</td></tr>';
         return;
       }
 
-      const byDate = new Map();
-      filtered.forEach(e => {
-        const maxWeight = e.sets.reduce((m, s) => Math.max(m, s.weight), 0);
-        const prev = byDate.get(e.date) || 0;
-        byDate.set(e.date, Math.max(prev, maxWeight));
-      });
-
-      const dates = Array.from(byDate.keys()).sort();
-      const weights = dates.map(d => byDate.get(d));
-
-      const maxWeight = Math.max(...weights);
-      const yMax = Math.ceil((maxWeight * 1.2 || 5) / 5) * 5;
-
-      const ctx = document.getElementById('stats-chart').getContext('2d');
-      if (statsChart) {
-        statsChart.destroy();
-      }
-      statsChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: dates,
-          datasets: [{
-            label: 'Peso máximo por día (kg)',
-            data: weights,
-            borderColor: '#f97316',
-            backgroundColor: 'rgba(249,115,22,0.25)',
-            tension: 0.25,
-            fill: true,
-            pointRadius: 4,
-            pointBackgroundColor: '#f97316'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              ticks: { color: '#9ca3af' },
-              grid: { color: 'rgba(55,65,81,0.4)' }
-            },
-            y: {
-              beginAtZero: true,
-              max: yMax,
-              ticks: { color: '#9ca3af' },
-              grid: { color: 'rgba(55,65,81,0.4)' }
-            }
-          },
-          plugins: {
-            legend: {
-              labels: { color: '#e5e7eb' }
-            }
-          }
-        }
-      });
-
-      const lastWeight = weights[weights.length - 1];
-      const lastDate = dates[dates.length - 1];
-      statsChartSummary.textContent =
-        `Último peso registrado: ${lastWeight} kg (${lastDate}). Total de días registrados: ${dates.length}.`;
-    }
-
-    // ---- Historial por día y "hoy" ----
-    function setsToString(entry) {
-      return entry.sets.map(s => `${s.weight}x${s.reps}`).join(' | ');
-    }
-
-    function entryTonnage(entry) {
-      return entry.sets.reduce((sum, s) => sum + s.weight * s.reps, 0);
-    }
-
-    function renderToday() {
-      tbodyTodayLast.innerHTML = '';
-      const today = todayString();
-      const todays = getOrderedEntries().filter(e => e.date === today).slice(0, 8);
-      todays.forEach(entry => {
+      filtered.forEach(entry => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${entry.exercise}</td>
+          <td>${entry.date}</td>
           <td>${setsToString(entry)}</td>
         `;
-        tbodyTodayLast.appendChild(tr);
+        exerciseHistoryBody.appendChild(tr);
       });
     }
-
-    function renderHistory() {
-      tbodyHistory.innerHTML = '';
-      dayGroups = [];
-
-      const ordered = getOrderedEntries();
-      const groupsMap = new Map();
-
-      ordered.forEach(e => {
-        const routineName = e.routineName || '-';
-        const key = `${e.date}||${routineName}`;
-        if (!groupsMap.has(key)) {
-          groupsMap.set(key, {
-            date: e.date,
-            routineName,
-            entries: [],
-            totalVolume: 0
-          });
-        }
-        const g = groupsMap.get(key);
-        g.entries.push(e);
-        g.totalVolume += entryTonnage(e);
-      });
-
-      dayGroups = Array.from(groupsMap.values()).sort((a, b) => b.date.localeCompare(a.date));
-
-      dayGroups.forEach((g, idx) => {
-        const tr = document.createElement('tr');
-        tr.setAttribute('data-day-index', idx);
-        tr.innerHTML = `
-          <td>${g.date}</td>
-          <td>${g.routineName}</td>
-          <td>${g.entries.length} ejercicios</td>
-          <td>${g.totalVolume}</td>
-          <td><button class="delete-btn btn-small" data-day-index="${idx}">Borrar</button></td>
-        `;
-        tbodyHistory.appendChild(tr);
-      });
-
-      if (!dayGroups.length) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="5">Todavía no hay entrenamientos.</td>`;
-        tbodyHistory.appendChild(tr);
-      }
-    }
-
-    function renderAll() {
-      renderToday();
-      renderHistory();
-    }
-
-    tbodyHistory.addEventListener('click', (e) => {
-      const delIdxStr = e.target.getAttribute('data-day-index');
-      if (delIdxStr !== null) {
-        const idx = Number(delIdxStr);
-        const g = dayGroups[idx];
-        if (!g) return;
-        if (!confirm(`¿Eliminar el entrenamiento del ${g.date} (${g.routineName})?`)) return;
-
-        entries = entries.filter(
-          en => !(en.date === g.date && (en.routineName || '-') === g.routineName)
-        );
-        saveEntries();
-        renderAll();
-        return;
-      }
-
-      const row = e.target.closest('tr[data-day-index]');
-      if (!row) return;
-      const dayIdx = Number(row.getAttribute('data-day-index'));
-      openDayModal(dayIdx);
-    });
 
     // Tabs
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -1229,7 +1031,7 @@
     renderTempExercises();
     renderRoutinesList();
     renderTempSets();
-    renderAll();
+    renderToday();
     renderStatsRoutineOptions();
   </script>
 </body>
