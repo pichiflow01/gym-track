@@ -299,6 +299,19 @@
       border: 1px solid rgba(148,163,184,0.35);
       background: rgba(15,23,42,0.9);
       margin-bottom: 8px;
+      cursor: pointer;
+      transition: background .12s ease, transform .08s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+    .modal-item:hover {
+      background: rgba(30,64,175,0.6);
+      border-color: rgba(129,140,248,0.8);
+      box-shadow: 0 10px 22px rgba(15,23,42,0.9);
+      transform: translateY(-1px);
+    }
+    .modal-item:active {
+      transform: scale(0.985);
+      opacity: 0.95;
+      box-shadow: 0 6px 14px rgba(15,23,42,0.9);
     }
     .modal-item-title {
       font-size: 0.9rem;
@@ -399,16 +412,7 @@
 
         <div class="card">
           <div class="tag">Series de este ejercicio</div>
-          <div class="summary" id="no-sets-msg">Agregá series y luego guardá el ejercicio.</div>
           <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Peso</th>
-                <th>Reps</th>
-                <th></th>
-              </tr>
-            </thead>
             <tbody id="sets-body"></tbody>
           </table>
 
@@ -543,7 +547,6 @@
     const addSetBtn = document.getElementById('add-set-btn');
     const saveExerciseBtn = document.getElementById('save-exercise-btn');
     const setsBody = document.getElementById('sets-body');
-    const noSetsMsg = document.getElementById('no-sets-msg');
     const tbodyTodayLast = document.getElementById('today-last-body');
 
     // Rutina
@@ -731,8 +734,8 @@
         div.innerHTML = `
           <div class="modal-item-title">${r.name}</div>
           <div>${exercisesHtml}</div>
-          <button class="btn-small" data-select-routine="${r.id}">Seleccionar</button>
         `;
+        div.setAttribute('data-select-routine', r.id);
         routineModalList.appendChild(div);
       });
       routineModal.classList.remove('hidden');
@@ -743,7 +746,9 @@
     }
 
     routineModalList.addEventListener('click', (e) => {
-      const id = e.target.getAttribute('data-select-routine');
+      const item = e.target.closest('.modal-item');
+      if (!item) return;
+      const id = item.getAttribute('data-select-routine');
       if (!id) return;
       const routine = routines.find(r => String(r.id) === String(id));
       if (!routine) return;
@@ -775,9 +780,9 @@
         const name = getExerciseName(ex);
         const div = document.createElement('div');
         div.className = 'modal-item';
+        div.setAttribute('data-select-exercise-index', index);
         div.innerHTML = `
           <div class="modal-item-title">${name}</div>
-          <button class="btn-small" data-select-exercise-index="${index}">Seleccionar</button>
         `;
         exerciseModalList.appendChild(div);
       });
@@ -789,11 +794,15 @@
     }
 
     exerciseModalList.addEventListener('click', (e) => {
-      const idxStr = e.target.getAttribute('data-select-exercise-index');
+      const item = e.target.closest('.modal-item');
+      if (!item) return;
+      const idxStr = item.getAttribute('data-select-exercise-index');
       if (idxStr === null) return;
+
       const idx = Number(idxStr);
       const routine = routines.find(r => String(r.id) === String(currentRoutineId));
       if (!routine || !routine.exercises || !routine.exercises[idx]) return;
+
       const ex = routine.exercises[idx];
       const name = getExerciseName(ex);
       currentExerciseName = name;
@@ -811,11 +820,6 @@
     // ---- Series temporales en HOY ----
     function renderTempSets() {
       setsBody.innerHTML = '';
-      if (!tempSets.length) {
-        noSetsMsg.style.display = 'block';
-        return;
-      }
-      noSetsMsg.style.display = 'none';
       tempSets.forEach((s, idx) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
