@@ -615,7 +615,6 @@
     });
 
     // Modales selección
-    const routineModalList = document.getElementById('routine-modal-list');
     function openRoutineModal() {
       if (!routines.length) {
         alert('Primero creá una rutina en la pestaña Rutina.');
@@ -655,7 +654,6 @@
       closeRoutineModal();
     });
 
-    const exerciseModalList = document.getElementById('exercise-modal-list');
     function openExerciseModal() {
       if (!currentRoutineId) { alert('Primero elegí una rutina.'); return; }
       const routine = routines.find(r => String(r.id) === String(currentRoutineId));
@@ -718,21 +716,6 @@
       renderTempSets();
     });
 
-    addSetBtn.addEventListener('click', () => {
-      if (!currentExerciseName) { alert('Elegí un ejercicio primero.'); return; }
-      const w = Number(weightInput.value);
-      const r = Number(repsInput.value);
-      if (!w || w <= 0 || !r || r <= 0) {
-        alert('Peso y repeticiones deben ser mayores a 0.');
-        return;
-      }
-      tempSets.push({ weight: w, reps: r });
-      weightInput.value = '';
-      repsInput.value = '';
-      renderTempSets();
-      weightInput.focus();
-    });
-
     saveExerciseBtn.addEventListener('click', () => {
       if (!currentRoutineId) { alert('Elegí una rutina.'); return; }
       if (!currentExerciseName) { alert('Elegí un ejercicio.'); return; }
@@ -742,7 +725,6 @@
       const routineName = routine ? routine.name : '';
 
       if (editingEntryId !== null) {
-        // actualizar existente
         const idx = entries.findIndex(e => e.id === editingEntryId);
         if (idx !== -1) {
           entries[idx] = {
@@ -776,6 +758,21 @@
       if (statsRoutineSelect.value && statsExerciseSelect.value) {
         renderExerciseHistory(statsRoutineSelect.value, statsExerciseSelect.value);
       }
+    });
+
+    addSetBtn.addEventListener('click', () => {
+      if (!currentExerciseName) { alert('Elegí un ejercicio primero.'); return; }
+      const w = Number(weightInput.value);
+      const r = Number(repsInput.value);
+      if (!w || w <= 0 || !r || r <= 0) {
+        alert('Peso y repeticiones deben ser mayores a 0.');
+        return;
+      }
+      tempSets.push({ weight: w, reps: r });
+      weightInput.value = '';
+      repsInput.value = '';
+      renderTempSets();
+      weightInput.focus();
     });
 
     function renderToday() {
