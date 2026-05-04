@@ -473,13 +473,28 @@
         </div>
       </section>
 
-      <!-- Pestaña 3: Stats -->
+      <!-- Pestaña 3: Stats (nuevo) -->
       <section id="tab-stats" class="view">
         <div class="card">
-          <div class="tag">Estadísticas rápidas</div>
-          <div class="summary" id="stats-total"></div>
-          <div class="summary" id="stats-max"></div>
-          <div class="summary" id="stats-week"></div>
+          <div class="tag">Progreso por ejercicio</div>
+          <label>
+            Rutina
+            <select id="stats-routine-select">
+              <option value="">Cargando rutinas...</option>
+            </select>
+          </label>
+          <label>
+            Ejercicio
+            <select id="stats-exercise-select" disabled>
+              <option value="">Seleccioná una rutina</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="card">
+          <div class="tag">Peso en el tiempo</div>
+          <canvas id="stats-chart" height="220"></canvas>
+          <div class="summary" id="stats-chart-summary">Seleccioná rutina y ejercicio para ver el gráfico.</div>
         </div>
 
         <div class="card">
@@ -533,6 +548,9 @@
     </div>
   </div>
 
+  <!-- Chart.js para el gráfico -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <script>
     const ROUTINES_KEY = 'gymRoutinesV2';
     const ENTRIES_KEY = 'gymProgressEntriesV6';
@@ -558,10 +576,10 @@
     const routineListDiv = document.getElementById('routine-list');
 
     // Stats / historial
+    const statsRoutineSelect = document.getElementById('stats-routine-select');
+    const statsExerciseSelect = document.getElementById('stats-exercise-select');
+    const statsChartSummary = document.getElementById('stats-chart-summary');
     const tbodyHistory = document.getElementById('entries-body');
-    const statsTotal = document.getElementById('stats-total');
-    const statsMax = document.getElementById('stats-max');
-    const statsWeek = document.getElementById('stats-week');
 
     // Modales
     const routineModal = document.getElementById('routine-modal');
@@ -575,12 +593,14 @@
     // Datos
     let routines = [];
     let entries = [];
-    // En esta versión los ejercicios de rutina se guardan solo con nombre.
-    let tempRoutineExercises = []; // cada item puede ser string o {name}, para compatibilidad
+    let tempRoutineExercises = []; // {name} (para cada ejercicio de la rutina)
     let tempSets = [];            // { weight, reps }
 
     let currentRoutineId = null;
     let currentExerciseName = null;
+
+    // Chart.js
+    let statsChart = null;
 
     function todayString() {
       return new Date().toISOString().slice(0, 10);
@@ -630,10 +650,7 @@
         return;
       }
       tempExerciseListDiv.innerHTML = tempRoutineExercises
-        .map((ex, idx) => {
-          const name = getExerciseName(ex);
-          return `<span class="pill">${idx + 1}. ${name}</span>`;
-        })
+        .map((ex, idx) => `<span class="pill">${idx + 1}. ${getExerciseName(ex)}</span>`)
         .join(' ');
     }
 
@@ -668,6 +685,7 @@
         routines = routines.filter(r => String(r.id) !== String(id));
         saveRoutines();
         renderRoutinesList();
+        renderStatsRoutineOptions();
 
         if (currentRoutineId && String(currentRoutineId) === String(id)) {
           currentRoutineId = null;
@@ -715,6 +733,7 @@
       routineForm.reset();
       renderTempExercises();
       renderRoutinesList();
+      renderStatsRoutineOptions();
       alert('Rutina guardada.');
     });
 
@@ -781,9 +800,7 @@
         const div = document.createElement('div');
         div.className = 'modal-item';
         div.setAttribute('data-select-exercise-index', index);
-        div.innerHTML = `
-          <div class="modal-item-title">${name}</div>
-        `;
+        div.innerHTML = `<div class="modal-item-title">${name}</div>`;
         exerciseModalList.appendChild(div);
       });
       exerciseModal.classList.remove('hidden');
@@ -893,7 +910,163 @@
       alert('Ejercicio guardado.');
     });
 
-    // ---- Render de HOY / Stats / Historial ----
+    // ---- Stats: selects y gráfico ----
+    function renderStatsRoutineOptions() {
+      statsRoutineSelect.innerHTML = '';
+      const withExercises = routines.filter(r => r.exercises && r.exercises.length);
+
+      if (!withExercises.length) {
+        statsRoutineSelect.innerHTML = '<option value="">Creá una rutina con ejercicios primero</option>';
+        statsExerciseSelect.innerHTML = '<option value="">Sin ejercicios</option>';
+        statsExerciseSelect.disabled = true;
+        updateStatsChart(null, null);
+        return;
+      }
+
+      const optDefault = document.createElement('option');
+      optDefault.value = '';
+      optDefault.textContent = 'Seleccioná una rutina';
+      statsRoutineSelect.appendChild(optDefault);
+
+      withExercises.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.name;
+        statsRoutineSelect.appendChild(opt);
+      });
+
+      statsExerciseSelect.innerHTML = '<option value="">Seleccioná una rutina</option>';
+      statsExerciseSelect.disabled = true;
+      updateStatsChart(null, null);
+    }
+
+    statsRoutineSelect.addEventListener('change', () => {
+      const id = statsRoutineSelect.value;
+      if (!id) {
+        statsExerciseSelect.innerHTML = '<option value="">Seleccioná una rutina</option>';
+        statsExerciseSelect.disabled = true;
+        updateStatsChart(null, null);
+        return;
+      }
+
+      const routine = routines.find(r => String(r.id) === String(id));
+      if (!routine || !routine.exercises || !routine.exercises.length) {
+        statsExerciseSelect.innerHTML = '<option value="">Esta rutina no tiene ejercicios</option>';
+        statsExerciseSelect.disabled = true;
+        updateStatsChart(null, null);
+        return;
+      }
+
+      statsExerciseSelect.disabled = false;
+      statsExerciseSelect.innerHTML = '';
+      const optDefault = document.createElement('option');
+      optDefault.value = '';
+      optDefault.textContent = 'Seleccioná un ejercicio';
+      statsExerciseSelect.appendChild(optDefault);
+
+      routine.exercises.forEach(ex => {
+        const name = getExerciseName(ex);
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        statsExerciseSelect.appendChild(opt);
+      });
+
+      updateStatsChart(null, null);
+    });
+
+    statsExerciseSelect.addEventListener('change', () => {
+      const routineId = statsRoutineSelect.value;
+      const exerciseName = statsExerciseSelect.value;
+      if (!routineId || !exerciseName) {
+        updateStatsChart(null, null);
+        return;
+      }
+      updateStatsChart(routineId, exerciseName);
+    });
+
+    function updateStatsChart(routineId, exerciseName) {
+      if (!routineId || !exerciseName) {
+        if (statsChart) {
+          statsChart.destroy();
+          statsChart = null;
+        }
+        statsChartSummary.textContent = 'Seleccioná rutina y ejercicio para ver el gráfico.';
+        return;
+      }
+
+      const filtered = entries.filter(
+        e => String(e.routineId) === String(routineId) && e.exercise === exerciseName
+      );
+
+      if (!filtered.length) {
+        if (statsChart) {
+          statsChart.destroy();
+          statsChart = null;
+        }
+        statsChartSummary.textContent = 'Todavía no hay registros para ese ejercicio en esa rutina.';
+        return;
+      }
+
+      // agrupar por fecha y tomar el peso máximo de ese día
+      const byDate = new Map();
+      filtered.forEach(e => {
+        const maxWeight = e.sets.reduce((m, s) => Math.max(m, s.weight), 0);
+        const prev = byDate.get(e.date) || 0;
+        byDate.set(e.date, Math.max(prev, maxWeight));
+      });
+
+      const dates = Array.from(byDate.keys()).sort();
+      const weights = dates.map(d => byDate.get(d));
+
+      const ctx = document.getElementById('stats-chart').getContext('2d');
+      if (statsChart) {
+        statsChart.destroy();
+      }
+      statsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: 'Peso máximo por día (kg)',
+            data: weights,
+            borderColor: '#f97316',
+            backgroundColor: 'rgba(249,115,22,0.25)',
+            tension: 0.25,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#f97316'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: { color: '#9ca3af' },
+              grid: { color: 'rgba(55,65,81,0.4)' }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#9ca3af' },
+              grid: { color: 'rgba(55,65,81,0.4)' }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#e5e7eb' }
+            }
+          }
+        }
+      });
+
+      const lastWeight = weights[weights.length - 1];
+      const lastDate = dates[dates.length - 1];
+      statsChartSummary.textContent =
+        `Último peso registrado: ${lastWeight} kg (${lastDate}). Total de días registrados: ${dates.length}.`;
+    }
+
+    // ---- Historial y "hoy" ----
     function setsToString(entry) {
       return entry.sets.map(s => `${s.weight}x${s.reps}`).join(' | ');
     }
@@ -934,40 +1107,10 @@
       });
     }
 
-    function renderStats() {
-      if (!entries.length) {
-        statsTotal.textContent = 'No hay entrenamientos aún.';
-        statsMax.textContent = '';
-        statsWeek.textContent = '';
-        return;
-      }
-
-      statsTotal.textContent = `Ejercicios registrados: ${entries.length}`;
-
-      const max = entries.reduce((m, e) => {
-        const localMax = e.sets.reduce((lm, s) => Math.max(lm, s.weight), 0);
-        return Math.max(m, localMax);
-      }, 0);
-      statsMax.textContent = `Peso máximo registrado: ${max} kg`;
-
-      const hoy = new Date();
-      const semanaMs = 7 * 24 * 60 * 60 * 1000;
-      let volSemana = 0;
-
-      entries.forEach(e => {
-        const d = new Date(e.date + 'T00:00:00');
-        if (hoy - d <= semanaMs) {
-          volSemana += entryTonnage(e);
-        }
-      });
-
-      statsWeek.textContent = `Tonelaje últimos 7 días: ${volSemana}`;
-    }
-
     function renderAll() {
       renderToday();
       renderHistory();
-      renderStats();
+      // el gráfico se actualiza cuando cambiás selección en Stats
     }
 
     tbodyHistory.addEventListener('click', (e) => {
@@ -1006,6 +1149,7 @@
     renderRoutinesList();
     renderTempSets();
     renderAll();
+    renderStatsRoutineOptions();
   </script>
 </body>
 </html>
