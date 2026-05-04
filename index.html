@@ -23,7 +23,7 @@
 
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:
         radial-gradient(circle at 0% 0%, rgba(249,115,22,0.18) 0, transparent 40%),
         radial-gradient(circle at 100% 0%, rgba(59,130,246,0.16) 0, transparent 45%),
@@ -395,9 +395,6 @@
             Ejercicio: <strong id="selected-exercise-label">Ninguno</strong>
           </div>
           <button type="button" id="choose-exercise-btn" class="btn-small" disabled>Elegir ejercicio</button>
-          <div class="summary" style="margin-top:8px;">
-            Series planificadas: <strong id="planned-sets-label">-</strong>
-          </div>
         </div>
 
         <div class="card">
@@ -429,12 +426,10 @@
         </div>
 
         <div class="card">
-          <div class="tag">Últimos ejercicios</div>
+          <div class="tag">Últimos ejercicios (hoy)</div>
           <table>
             <thead>
               <tr>
-                <th>Fecha</th>
-                <th>Rutina</th>
                 <th>Ejercicio</th>
                 <th>Series</th>
               </tr>
@@ -457,8 +452,7 @@
             <label>
               Agregar ejercicio
               <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;">
-                <input type="text" id="routine-exercise-input" placeholder="Press banca, Sentadilla, etc." style="flex:2 1 60%;">
-                <input type="number" id="routine-exercise-sets-input" min="1" step="1" placeholder="Series" style="flex:1 1 28%;">
+                <input type="text" id="routine-exercise-input" placeholder="Press banca, Sentadilla, etc." style="flex:1 1 70%;">
                 <button type="button" class="btn-small" id="add-exercise-btn">Agregar</button>
               </div>
             </label>
@@ -544,7 +538,6 @@
     const chooseExerciseBtn = document.getElementById('choose-exercise-btn');
     const selectedRoutineLabel = document.getElementById('selected-routine-label');
     const selectedExerciseLabel = document.getElementById('selected-exercise-label');
-    const plannedSetsLabel = document.getElementById('planned-sets-label');
     const weightInput = document.getElementById('weight');
     const repsInput = document.getElementById('reps');
     const addSetBtn = document.getElementById('add-set-btn');
@@ -557,7 +550,6 @@
     const routineForm = document.getElementById('routine-form');
     const routineNameInput = document.getElementById('routine-name');
     const routineExerciseInput = document.getElementById('routine-exercise-input');
-    const routineExerciseSetsInput = document.getElementById('routine-exercise-sets-input');
     const addExerciseRoutineBtn = document.getElementById('add-exercise-btn');
     const tempExerciseListDiv = document.getElementById('routine-exercise-temp-list');
     const routineListDiv = document.getElementById('routine-list');
@@ -580,12 +572,12 @@
     // Datos
     let routines = [];
     let entries = [];
-    let tempRoutineExercises = []; // { name, sets }
+    // En esta versión los ejercicios de rutina se guardan solo con nombre.
+    let tempRoutineExercises = []; // cada item puede ser string o {name}, para compatibilidad
     let tempSets = [];            // { weight, reps }
 
     let currentRoutineId = null;
     let currentExerciseName = null;
-    let currentExercisePlannedSets = null;
 
     function todayString() {
       return new Date().toISOString().slice(0, 10);
@@ -625,13 +617,20 @@
     }
 
     // ---- Rutinas: UI ----
+    function getExerciseName(ex) {
+      return typeof ex === 'string' ? ex : (ex && ex.name) || '';
+    }
+
     function renderTempExercises() {
       if (!tempRoutineExercises.length) {
-        tempExerciseListDiv.textContent = 'Agregá ejercicios a la rutina (nombre + series).';
+        tempExerciseListDiv.textContent = 'Agregá ejercicios a la rutina.';
         return;
       }
       tempExerciseListDiv.innerHTML = tempRoutineExercises
-        .map((ex, idx) => `<span class="pill">${idx + 1}. ${ex.name} (${ex.sets}x)</span>`)
+        .map((ex, idx) => {
+          const name = getExerciseName(ex);
+          return `<span class="pill">${idx + 1}. ${name}</span>`;
+        })
         .join(' ');
     }
 
@@ -644,9 +643,9 @@
       routines.forEach(r => {
         const wrapper = document.createElement('div');
         wrapper.style.marginBottom = '10px';
-        const exercisesHtml = r.exercises.length
+        const exercisesHtml = r.exercises && r.exercises.length
           ? r.exercises
-              .map((e, i) => `<span class="pill">${i + 1}. ${e.name} (${e.sets}x)</span>`)
+              .map((e, i) => `<span class="pill">${i + 1}. ${getExerciseName(e)}</span>`)
               .join(' ')
           : '<span class="summary">Sin ejercicios.</span>';
 
@@ -670,10 +669,8 @@
         if (currentRoutineId && String(currentRoutineId) === String(id)) {
           currentRoutineId = null;
           currentExerciseName = null;
-          currentExercisePlannedSets = null;
           selectedRoutineLabel.textContent = 'Ninguna';
           selectedExerciseLabel.textContent = 'Ninguno';
-          plannedSetsLabel.textContent = '-';
           tempSets = [];
           renderTempSets();
         }
@@ -682,14 +679,12 @@
 
     addExerciseRoutineBtn.addEventListener('click', () => {
       const name = routineExerciseInput.value.trim();
-      const sets = Number(routineExerciseSetsInput.value);
-      if (!name || !sets || sets <= 0) {
-        alert('Completá nombre y series (>0).');
+      if (!name) {
+        alert('Escribí el nombre del ejercicio.');
         return;
       }
-      tempRoutineExercises.push({ name, sets });
+      tempRoutineExercises.push({ name });
       routineExerciseInput.value = '';
-      routineExerciseSetsInput.value = '';
       renderTempExercises();
       routineExerciseInput.focus();
     });
@@ -708,7 +703,7 @@
       const routine = {
         id: Date.now(),
         name,
-        exercises: [...tempRoutineExercises], // {name, sets}
+        exercises: tempRoutineExercises.map(ex => ({ name: getExerciseName(ex) })),
         createdAt: Date.now()
       };
       routines.push(routine);
@@ -730,8 +725,8 @@
       routines.forEach(r => {
         const div = document.createElement('div');
         div.className = 'modal-item';
-        const exercisesHtml = r.exercises.length
-          ? r.exercises.map(e => `<span class="pill">${e.name} (${e.sets}x)</span>`).join(' ')
+        const exercisesHtml = r.exercises && r.exercises.length
+          ? r.exercises.map(e => `<span class="pill">${getExerciseName(e)}</span>`).join(' ')
           : '<span class="summary">Sin ejercicios.</span>';
         div.innerHTML = `
           <div class="modal-item-title">${r.name}</div>
@@ -756,12 +751,10 @@
       selectedRoutineLabel.textContent = routine.name;
       // al cambiar rutina, se resetea ejercicio y series
       currentExerciseName = null;
-      currentExercisePlannedSets = null;
       selectedExerciseLabel.textContent = 'Ninguno';
-      plannedSetsLabel.textContent = '-';
       tempSets = [];
       renderTempSets();
-      chooseExerciseBtn.disabled = !routine.exercises.length;
+      chooseExerciseBtn.disabled = !(routine.exercises && routine.exercises.length);
       closeRoutineModal();
     });
 
@@ -773,17 +766,17 @@
         return;
       }
       const routine = routines.find(r => String(r.id) === String(currentRoutineId));
-      if (!routine || !routine.exercises.length) {
+      if (!routine || !routine.exercises || !routine.exercises.length) {
         alert('Esta rutina no tiene ejercicios.');
         return;
       }
       exerciseModalList.innerHTML = '';
       routine.exercises.forEach((ex, index) => {
+        const name = getExerciseName(ex);
         const div = document.createElement('div');
         div.className = 'modal-item';
         div.innerHTML = `
-          <div class="modal-item-title">${ex.name}</div>
-          <div class="summary">Series planificadas: ${ex.sets}</div>
+          <div class="modal-item-title">${name}</div>
           <button class="btn-small" data-select-exercise-index="${index}">Seleccionar</button>
         `;
         exerciseModalList.appendChild(div);
@@ -800,12 +793,11 @@
       if (idxStr === null) return;
       const idx = Number(idxStr);
       const routine = routines.find(r => String(r.id) === String(currentRoutineId));
-      if (!routine || !routine.exercises[idx]) return;
+      if (!routine || !routine.exercises || !routine.exercises[idx]) return;
       const ex = routine.exercises[idx];
-      currentExerciseName = ex.name;
-      currentExercisePlannedSets = ex.sets;
-      selectedExerciseLabel.textContent = ex.name;
-      plannedSetsLabel.textContent = ex.sets;
+      const name = getExerciseName(ex);
+      currentExerciseName = name;
+      selectedExerciseLabel.textContent = name;
       tempSets = [];
       renderTempSets();
       closeExerciseModal();
@@ -855,10 +847,6 @@
         alert('Peso y repeticiones deben ser mayores a 0.');
         return;
       }
-      if (currentExercisePlannedSets && tempSets.length >= currentExercisePlannedSets) {
-        alert(`Ya cargaste las ${currentExercisePlannedSets} series planificadas.`);
-        return;
-      }
       tempSets.push({ weight: w, reps: r });
       weightInput.value = '';
       repsInput.value = '';
@@ -880,13 +868,6 @@
         return;
       }
 
-      if (currentExercisePlannedSets && tempSets.length < currentExercisePlannedSets) {
-        const falta = currentExercisePlannedSets - tempSets.length;
-        if (!confirm(`Planificaste ${currentExercisePlannedSets} series y cargaste ${tempSets.length}. Faltan ${falta}. ¿Guardar igual?`)) {
-          return;
-        }
-      }
-
       const routine = routines.find(r => String(r.id) === String(currentRoutineId));
       const routineName = routine ? routine.name : '';
 
@@ -896,7 +877,6 @@
         routineId: currentRoutineId,
         routineName,
         exercise: currentExerciseName,
-        plannedSets: currentExercisePlannedSets,
         sets: [...tempSets],
         createdAt: Date.now()
       };
@@ -920,15 +900,13 @@
 
     function renderToday() {
       tbodyTodayLast.innerHTML = '';
-      const ordered = getOrderedEntries().slice(0, 8);
-      ordered.forEach(entry => {
-        const planned = entry.plannedSets ? ` (${entry.sets.length}/${entry.plannedSets})` : '';
+      const today = todayString();
+      const todays = getOrderedEntries().filter(e => e.date === today).slice(0, 8);
+      todays.forEach(entry => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${entry.date}</td>
-          <td>${entry.routineName || '-'}</td>
           <td>${entry.exercise}</td>
-          <td>${setsToString(entry)}${planned}</td>
+          <td>${setsToString(entry)}</td>
         `;
         tbodyTodayLast.appendChild(tr);
       });
@@ -939,13 +917,12 @@
       const ordered = getOrderedEntries();
 
       ordered.forEach(entry => {
-        const planned = entry.plannedSets ? ` (${entry.sets.length}/${entry.plannedSets})` : '';
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${entry.date}</td>
           <td>${entry.routineName || '-'}</td>
           <td>${entry.exercise}</td>
-          <td>${setsToString(entry)}${planned}</td>
+          <td>${setsToString(entry)}</td>
           <td>${entryTonnage(entry)}</td>
           <td><button class="delete-btn btn-small" data-id="${entry.id}">Borrar</button></td>
         `;
