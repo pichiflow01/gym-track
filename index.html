@@ -951,8 +951,6 @@
     });
 
     // ---- Stats: selects y gráfico ----
-    let statsChart = null;
-
     function renderStatsRoutineOptions() {
       statsRoutineSelect.innerHTML = '';
       const withExercises = routines.filter(r => r.exercises && r.exercises.length);
@@ -1157,10 +1155,7 @@
         g.totalVolume += entryTonnage(e);
       });
 
-      dayGroups = Array.from(groupsMap.values()).sort((a, b) => {
-        // ordenar por fecha descendente
-        return b.date.localeCompare(a.date);
-      });
+      dayGroups = Array.from(groupsMap.values()).sort((a, b) => b.date.localeCompare(a.date));
 
       dayGroups.forEach((g, idx) => {
         const tr = document.createElement('tr');
@@ -1190,7 +1185,6 @@
     tbodyHistory.addEventListener('click', (e) => {
       const delIdxStr = e.target.getAttribute('data-day-index');
       if (delIdxStr !== null) {
-        // borrar entrenamiento completo (todas las entries de ese día/rutina)
         const idx = Number(delIdxStr);
         const g = dayGroups[idx];
         if (!g) return;
