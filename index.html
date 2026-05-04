@@ -229,7 +229,6 @@
       white-space:nowrap;
     }
 
-    /* Barra inferior tipo app */
     .tab-bar {
       position: fixed;
       bottom: 0; left: 0; right: 0;
@@ -259,123 +258,24 @@
       font-weight:650;
     }
 
-    #tab-hoy h2,
-    #tab-rutina h2,
-    #tab-stats h2 { margin:0 0 8px; font-size:1rem; }
-
-    /* Modales */
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(15,23,42,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      backdrop-filter: blur(12px);
-    }
-    .modal-content {
-      background: radial-gradient(circle at 0 0, rgba(15,23,42,0.96), #020617);
-      border-radius: 18px;
-      border: 1px solid rgba(148,163,184,0.4);
-      max-width: 380px;
-      width: 92%;
-      max-height: 78vh;
-      overflow-y: auto;
-      padding: 14px 14px 12px;
-      box-shadow: 0 24px 40px rgba(15,23,42,0.95);
-    }
-    .modal h2 {
-      margin: 0 0 10px;
-      font-size: 1rem;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-    }
-    .hidden { display: none; }
-
-    .modal-item {
-      padding: 9px 10px;
-      border-radius: 14px;
-      border: 1px solid rgba(148,163,184,0.35);
-      background: rgba(15,23,42,0.9);
-      margin-bottom: 8px;
-      cursor: pointer;
-      transition: background .12s ease, transform .08s ease, box-shadow .12s ease, border-color .12s ease;
-    }
-    .modal-item:hover {
-      background: rgba(30,64,175,0.6);
-      border-color: rgba(129,140,248,0.8);
-      box-shadow: 0 10px 22px rgba(15,23,42,0.9);
-      transform: translateY(-1px);
-    }
-    .modal-item:active {
-      transform: scale(0.985);
-      opacity: 0.95;
-      box-shadow: 0 6px 14px rgba(15,23,42,0.9);
-    }
-    .modal-item-title {
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
     @media (min-width: 768px) {
-      main {
-        max-width: 640px;
-        margin: 0 auto;
-      }
+      main { max-width: 640px; margin: 0 auto; }
     }
-
     @media (max-width: 480px) {
-      body {
-        font-size: 16px;
-      }
-      main {
-        padding: 12px 10px 96px;
-      }
-      header span {
-        font-size: 0.95rem;
-      }
-      input,
-      select,
-      textarea {
-        font-size: 16px;
-        padding: 9px 12px;
-      }
-      form,
-      .card {
-        padding: 12px 12px 10px;
-        border-radius: 14px;
-        margin-bottom: 12px;
-      }
-      button {
-        min-height: 40px;
-      }
-      .btn-small {
-        min-height: 34px;
-        padding-inline: 10px;
-      }
-      table {
-        font-size: 0.78rem;
-      }
-      th, td {
-        padding: 6px 4px;
-      }
-      .tab-bar {
-        height: 64px;
-      }
-      .tab-btn {
-        font-size: 0.72rem;
-      }
+      body { font-size: 16px; }
+      main { padding: 12px 10px 96px; }
+      header span { font-size: 0.95rem; }
+      input, select, textarea { font-size: 16px; padding: 9px 12px; }
+      form, .card { padding: 12px 12px 10px; border-radius: 14px; margin-bottom: 12px; }
+      button { min-height: 40px; }
+      .btn-small { min-height: 34px; padding-inline: 10px; }
+      table { font-size: 0.78rem; }
+      th, td { padding: 6px 4px; }
+      .tab-bar { height: 64px; }
+      .tab-btn { font-size: 0.72rem; }
     }
-
     @media (max-width: 380px) {
-      table {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-      }
+      table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     }
   </style>
 </head>
@@ -387,7 +287,7 @@
     </header>
 
     <main>
-      <!-- Pestaña 1: Hoy -->
+      <!-- HOY -->
       <section id="tab-hoy" class="view active">
         <div class="card">
           <div class="tag">Rutina y ejercicio</div>
@@ -427,6 +327,7 @@
               <tr>
                 <th>Ejercicio</th>
                 <th>Series</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="today-last-body"></tbody>
@@ -434,7 +335,7 @@
         </div>
       </section>
 
-      <!-- Pestaña 2: Rutina -->
+      <!-- RUTINA -->
       <section id="tab-rutina" class="view">
         <div class="card">
           <div class="tag">Nueva rutina</div>
@@ -464,7 +365,7 @@
         </div>
       </section>
 
-      <!-- Pestaña 3: Stats -->
+      <!-- STATS -->
       <section id="tab-stats" class="view">
         <div class="card">
           <div class="tag">Progreso por ejercicio</div>
@@ -499,15 +400,9 @@
 
     <!-- Barra inferior -->
     <nav class="tab-bar">
-      <button class="tab-btn tab-btn-active" data-tab="hoy">
-        Hoy
-      </button>
-      <button class="tab-btn" data-tab="rutina">
-        Rutina
-      </button>
-      <button class="tab-btn" data-tab="stats">
-        Stats
-      </button>
+      <button class="tab-btn tab-btn-active" data-tab="hoy">Hoy</button>
+      <button class="tab-btn" data-tab="rutina">Rutina</button>
+      <button class="tab-btn" data-tab="stats">Stats</button>
     </nav>
   </div>
 
@@ -533,7 +428,7 @@
     const ROUTINES_KEY = 'gymRoutinesV2';
     const ENTRIES_KEY = 'gymProgressEntriesV6';
 
-    // Hoy
+    // HOY
     const chooseRoutineBtn = document.getElementById('choose-routine-btn');
     const chooseExerciseBtn = document.getElementById('choose-exercise-btn');
     const selectedRoutineLabel = document.getElementById('selected-routine-label');
@@ -545,7 +440,7 @@
     const setsBody = document.getElementById('sets-body');
     const tbodyTodayLast = document.getElementById('today-last-body');
 
-    // Rutina
+    // RUTINA
     const routineForm = document.getElementById('routine-form');
     const routineNameInput = document.getElementById('routine-name');
     const routineExerciseInput = document.getElementById('routine-exercise-input');
@@ -553,7 +448,7 @@
     const tempExerciseListDiv = document.getElementById('routine-exercise-temp-list');
     const routineListDiv = document.getElementById('routine-list');
 
-    // Stats
+    // STATS
     const statsRoutineSelect = document.getElementById('stats-routine-select');
     const statsExerciseSelect = document.getElementById('stats-exercise-select');
     const exerciseHistoryBody = document.getElementById('exercise-history-body');
@@ -575,18 +470,23 @@
 
     let currentRoutineId = null;
     let currentExerciseName = null;
+    let editingEntryId = null;   // para editar ejercicios de HOY
 
     function todayString() {
       return new Date().toISOString().slice(0, 10);
+    }
+
+    function formatDateDisplay(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y.slice(2)}`;
     }
 
     function loadRoutines() {
       try {
         const raw = localStorage.getItem(ROUTINES_KEY);
         routines = raw ? JSON.parse(raw) : [];
-      } catch {
-        routines = [];
-      }
+      } catch { routines = []; }
     }
 
     function saveRoutines() {
@@ -597,9 +497,7 @@
       try {
         const raw = localStorage.getItem(ENTRIES_KEY);
         entries = raw ? JSON.parse(raw) : [];
-      } catch {
-        entries = [];
-      }
+      } catch { entries = []; }
     }
 
     function saveEntries() {
@@ -613,16 +511,16 @@
       }).reverse();
     }
 
-    // ---- Helpers ----
+    // Helpers
     function getExerciseName(ex) {
       return typeof ex === 'string' ? ex : (ex && ex.name) || '';
     }
 
     function setsToString(entry) {
-      return entry.sets.map(s => `${s.weight}x${s.reps}`).join(' | ');
+      return entry.sets.map(s => `${s.weight}kg x ${s.reps}`).join(' | ');
     }
 
-    // ---- Rutinas UI ----
+    // RUTINA UI
     function renderTempExercises() {
       if (!tempRoutineExercises.length) {
         tempExerciseListDiv.textContent = 'Agregá ejercicios a la rutina.';
@@ -716,7 +614,8 @@
       alert('Rutina guardada.');
     });
 
-    // ---- Modales selección rutina/ejercicio ----
+    // Modales selección
+    const routineModalList = document.getElementById('routine-modal-list');
     function openRoutineModal() {
       if (!routines.length) {
         alert('Primero creá una rutina en la pestaña Rutina.');
@@ -738,16 +637,12 @@
       });
       routineModal.classList.remove('hidden');
     }
-
-    function closeRoutineModal() {
-      routineModal.classList.add('hidden');
-    }
-
+    function closeRoutineModal() { routineModal.classList.add('hidden'); }
+    closeRoutineModalBtn.addEventListener('click', closeRoutineModal);
     routineModalList.addEventListener('click', (e) => {
       const item = e.target.closest('.modal-item');
       if (!item) return;
       const id = item.getAttribute('data-select-routine');
-      if (!id) return;
       const routine = routines.find(r => String(r.id) === String(id));
       if (!routine) return;
       currentRoutineId = routine.id;
@@ -760,13 +655,9 @@
       closeRoutineModal();
     });
 
-    closeRoutineModalBtn.addEventListener('click', closeRoutineModal);
-
+    const exerciseModalList = document.getElementById('exercise-modal-list');
     function openExerciseModal() {
-      if (!currentRoutineId) {
-        alert('Primero elegí una rutina.');
-        return;
-      }
+      if (!currentRoutineId) { alert('Primero elegí una rutina.'); return; }
       const routine = routines.find(r => String(r.id) === String(currentRoutineId));
       if (!routine || !routine.exercises || !routine.exercises.length) {
         alert('Esta rutina no tiene ejercicios.');
@@ -783,21 +674,15 @@
       });
       exerciseModal.classList.remove('hidden');
     }
-
-    function closeExerciseModal() {
-      exerciseModal.classList.add('hidden');
-    }
-
+    function closeExerciseModal() { exerciseModal.classList.add('hidden'); }
+    closeExerciseModalBtn.addEventListener('click', closeExerciseModal);
     exerciseModalList.addEventListener('click', (e) => {
       const item = e.target.closest('.modal-item');
       if (!item) return;
       const idxStr = item.getAttribute('data-select-exercise-index');
-      if (idxStr === null) return;
-
       const idx = Number(idxStr);
       const routine = routines.find(r => String(r.id) === String(currentRoutineId));
       if (!routine || !routine.exercises || !routine.exercises[idx]) return;
-
       const ex = routine.exercises[idx];
       const name = getExerciseName(ex);
       currentExerciseName = name;
@@ -807,19 +692,17 @@
       closeExerciseModal();
     });
 
-    closeExerciseModalBtn.addEventListener('click', closeExerciseModal);
-
     chooseRoutineBtn.addEventListener('click', openRoutineModal);
     chooseExerciseBtn.addEventListener('click', openExerciseModal);
 
-    // ---- Hoy: series temporales ----
+    // HOY: series
     function renderTempSets() {
       setsBody.innerHTML = '';
       tempSets.forEach((s, idx) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${idx + 1}</td>
-          <td>${s.weight} kg</td>
+          <td>${s.weight}kg</td>
           <td>${s.reps}</td>
           <td><button class="delete-btn btn-small" data-set-index="${idx}">X</button></td>
         `;
@@ -836,10 +719,7 @@
     });
 
     addSetBtn.addEventListener('click', () => {
-      if (!currentExerciseName) {
-        alert('Elegí un ejercicio primero.');
-        return;
-      }
+      if (!currentExerciseName) { alert('Elegí un ejercicio primero.'); return; }
       const w = Number(weightInput.value);
       const r = Number(repsInput.value);
       if (!w || w <= 0 || !r || r <= 0) {
@@ -854,59 +734,86 @@
     });
 
     saveExerciseBtn.addEventListener('click', () => {
-      if (!currentRoutineId) {
-        alert('Elegí una rutina.');
-        return;
-      }
-      if (!currentExerciseName) {
-        alert('Elegí un ejercicio.');
-        return;
-      }
-      if (!tempSets.length) {
-        alert('Agregá al menos una serie.');
-        return;
-      }
+      if (!currentRoutineId) { alert('Elegí una rutina.'); return; }
+      if (!currentExerciseName) { alert('Elegí un ejercicio.'); return; }
+      if (!tempSets.length) { alert('Agregá al menos una serie.'); return; }
 
       const routine = routines.find(r => String(r.id) === String(currentRoutineId));
       const routineName = routine ? routine.name : '';
 
-      const entry = {
-        id: Date.now(),
-        date: todayString(),
-        routineId: currentRoutineId,
-        routineName,
-        exercise: currentExerciseName,
-        sets: [...tempSets],
-        createdAt: Date.now()
-      };
+      if (editingEntryId !== null) {
+        // actualizar existente
+        const idx = entries.findIndex(e => e.id === editingEntryId);
+        if (idx !== -1) {
+          entries[idx] = {
+            ...entries[idx],
+            routineId: currentRoutineId,
+            routineName,
+            exercise: currentExerciseName,
+            sets: [...tempSets]
+          };
+        }
+        editingEntryId = null;
+        alert('Ejercicio actualizado.');
+      } else {
+        const entry = {
+          id: Date.now(),
+          date: todayString(),
+          routineId: currentRoutineId,
+          routineName,
+          exercise: currentExerciseName,
+          sets: [...tempSets],
+          createdAt: Date.now()
+        };
+        entries.push(entry);
+        alert('Ejercicio guardado.');
+      }
 
-      entries.push(entry);
       saveEntries();
       tempSets = [];
       renderTempSets();
       renderToday();
-      // Si en Stats está seleccionado el mismo ejercicio, actualizamos tabla allí también
       if (statsRoutineSelect.value && statsExerciseSelect.value) {
         renderExerciseHistory(statsRoutineSelect.value, statsExerciseSelect.value);
       }
-      alert('Ejercicio guardado.');
     });
 
     function renderToday() {
       tbodyTodayLast.innerHTML = '';
       const today = todayString();
-      const todays = getOrderedEntries().filter(e => e.date === today).slice(0, 8);
+      const todays = getOrderedEntries().filter(e => e.date === today).slice(0, 20);
       todays.forEach(entry => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${entry.exercise}</td>
           <td>${setsToString(entry)}</td>
+          <td><button class="btn-small" data-edit-entry-id="${entry.id}">Editar</button></td>
         `;
         tbodyTodayLast.appendChild(tr);
       });
     }
 
-    // ---- Stats: selects + historial por ejercicio ----
+    tbodyTodayLast.addEventListener('click', (e) => {
+      const idStr = e.target.getAttribute('data-edit-entry-id');
+      if (!idStr) return;
+      const id = Number(idStr);
+      const entry = entries.find(en => en.id === id);
+      if (!entry) return;
+
+      editingEntryId = id;
+      currentRoutineId = entry.routineId;
+      currentExerciseName = entry.exercise;
+
+      selectedRoutineLabel.textContent = entry.routineName || 'Sin nombre';
+      selectedExerciseLabel.textContent = entry.exercise;
+
+      tempSets = entry.sets.map(s => ({ ...s }));
+      renderTempSets();
+      weightInput.value = '';
+      repsInput.value = '';
+    });
+
+    // STATS
     function renderStatsRoutineOptions() {
       statsRoutineSelect.innerHTML = '';
       const withExercises = routines.filter(r => r.exercises && r.exercises.length);
@@ -999,7 +906,7 @@
       filtered.forEach(entry => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${entry.date}</td>
+          <td>${formatDateDisplay(entry.date)}</td>
           <td>${setsToString(entry)}</td>
         `;
         exerciseHistoryBody.appendChild(tr);
